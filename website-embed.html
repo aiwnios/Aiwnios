@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aiwnios - HolyC Compiler/Runtime</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .header h1 span {
+            color: #00d4ff;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .nav-links a {
+            color: #ccc;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: #00d4ff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .intro {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .intro h2 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .intro p {
+            color: #aaa;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .canvas-wrapper {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+
+        .canvas-header {
+            background: #2d2d2d;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .canvas-header .dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .canvas-header .dot.red { background: #ff5f56; }
+        .canvas-header .dot.yellow { background: #ffbd2e; }
+        .canvas-header .dot.green { background: #27ca40; }
+
+        .canvas-header .title {
+            margin-left: 1rem;
+            color: #888;
+            font-size: 0.875rem;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #000;
+        }
+
+        #canvas-container canvas {
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 4rem;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #00d4ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .info-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .info-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .info-card h3 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: #00d4ff;
+        }
+
+        .info-card p {
+            color: #aaa;
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            color: #666;
+            font-size: 0.875rem;
+        }
+
+        .footer a {
+            color: #00d4ff;
+            text-decoration: none;
+        }
+
+        /* Fullscreen mode */
+        .canvas-wrapper.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9999;
+            border-radius: 0;
+            margin: 0;
+        }
+
+        .canvas-wrapper.fullscreen #canvas-container {
+            height: calc(100vh - 44px);
+        }
+
+        .fullscreen-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: auto;
+            font-size: 0.75rem;
+            transition: background 0.2s;
+        }
+
+        .fullscreen-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1><span>Aiwnios</span> HolyC Runtime</h1>
+        <nav class="nav-links">
+            <a href="https://github.com/nrootconauto/Aiwnios" target="_blank">GitHub</a>
+            <a href="#about">About</a>
+            <a href="#help">Help</a>
+        </nav>
+    </header>
+
+    <main class="container">
+        <section class="intro">
+            <h2>HolyC in Your Browser</h2>
+            <p>A cross-platform HolyC compiler and runtime, running entirely in WebAssembly. Experience TempleOS-style programming anywhere.</p>
+        </section>
+
+        <div class="canvas-wrapper" id="canvas-wrapper">
+            <div class="canvas-header">
+                <span class="dot red"></span>
+                <span class="dot yellow"></span>
+                <span class="dot green"></span>
+                <span class="title">Aiwnios Terminal</span>
+                <button class="fullscreen-btn" onclick="toggleFullscreen()">Fullscreen</button>
+            </div>
+            <div id="canvas-container">
+                <div class="loading" id="loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading Aiwnios...</p>
+                    <p id="status" style="margin-top: 0.5rem; color: #666; font-size: 0.875rem;">Initializing WebAssembly...</p>
+                </div>
+            </div>
+        </div>
+
+        <section class="info-cards" id="about">
+            <div class="info-card">
+                <h3>What is HolyC?</h3>
+                <p>HolyC is a programming language created by Terry Davis for TempleOS. It combines C-like syntax with unique features like inline assembly and real-time compilation.</p>
+            </div>
+            <div class="info-card">
+                <h3>Getting Started</h3>
+                <p>Click in the canvas above to focus. Type HolyC code directly and press Enter. Try: "Hello World!\n"; or "1+2+3;"</p>
+            </div>
+            <div class="info-card">
+                <h3>Features</h3>
+                <p>Full HolyC compiler, graphics support, file system access, and more - all running locally in your browser via WebAssembly.</p>
+            </div>
+            <div class="info-card" id="help">
+                <h3>Keyboard Shortcuts</h3>
+                <p>Escape: Release keyboard focus. The environment supports TempleOS-style DolDoc commands and editors.</p>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p>Aiwnios by <a href="mailto:nrootconauto@gmail.com">nrootconauto</a> |
+           <a href="https://github.com/nrootconauto/Aiwnios">Source Code</a></p>
+    </footer>
+
+    <script>
+        function toggleFullscreen() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            wrapper.classList.toggle('fullscreen');
+            const btn = wrapper.querySelector('.fullscreen-btn');
+            btn.textContent = wrapper.classList.contains('fullscreen') ? 'Exit Fullscreen' : 'Fullscreen';
+        }
+
+        // Escape key to exit fullscreen
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const wrapper = document.getElementById('canvas-wrapper');
+                if (wrapper.classList.contains('fullscreen')) {
+                    toggleFullscreen();
+                }
+            }
+        });
+    </script>
+
+    <!--
+    =======================================================================
+    INTEGRATION INSTRUCTIONS
+    =======================================================================
+
+    To make this page work with Aiwnios WebAssembly build:
+
+    1. Build Aiwnios for WebAssembly following the README instructions:
+
+       # First, build bytecode HCRT2.BIN
+       mkdir bytecode && cd bytecode
+       cmake -DUSE_BYTECODE=on ..
+       make -j8
+       cd ..
+
+       # Prepare wasmStage directory
+       mkdir wasmStage
+       cp HCRT2.BIN wasmStage
+       cp HCRT2.DBG.Z wasmStage
+       cp PersonalMenu.DD wasmStage
+       cp -r Src wasmStage/Src
+       cp -r Doc wasmStage/Doc
+       cp -r Demo wasmStage/Demo
+       cp -r Apps wasmStage/Apps
+
+       # Build WebAssembly version
+       mkdir wasmAiwn && cd wasmAiwn
+       emcmake cmake -DUSE_BYTECODE=on ..
+       emmake make
+       cd ..
+
+    2. The build produces aiwnios.html and aiwnios.js (single file with WASM embedded)
+
+    3. To integrate with this template, you have two options:
+
+       OPTION A - Copy the Module configuration from aiwnios.html:
+       - Open the generated aiwnios.html
+       - Copy the <script> sections containing the Module configuration
+       - Paste them before the closing </body> tag in this file
+       - Update the canvas selector to match #canvas-container
+
+       OPTION B - Use an iframe (simpler):
+       - Replace the #canvas-container div contents with:
+         <iframe src="aiwnios.html" width="100%" height="100%" frameborder="0"></iframe>
+       - Remove the loading div
+
+    4. Upload all files to your web server:
+       - This HTML file (rename as needed, e.g., holyc.html)
+       - aiwnios.js (the Emscripten-generated JavaScript)
+
+    5. Ensure your web server sends proper headers for WebAssembly:
+       - Content-Type: application/wasm for .wasm files
+       - Cross-Origin headers if needed for SharedArrayBuffer
+
+    =======================================================================
+    -->
+</body>
+</html>
