@@ -6929,7 +6929,7 @@ extern U8 SSE_ShuffleByte(I64 a,I64 b,I64 c,I64 d);
 #define REGISTRY_FILENAME "~/Registry.HC.Z"
 #define SE_NOISE	0
 #define SE_SWEEP	1
-#define INTERNAL_TYPES_NUM	17
+#define INTERNAL_TYPES_NUM	23
 #define WIN_SCROLL_SIZE		8
 #define WIN_SCROLL_BORDER_BONUS	4
 #define VIEWANGLES_SPACING	22
