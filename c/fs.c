@@ -408,6 +408,7 @@ int VFsMountDrive(char let, char *path) {
   int idx = toupper(let) - 'A';
   char *p = StPCpy(mount_points[idx], path);
   strcpy(p, "/");
+  return 1;
 }
 
 int64_t VFsFBlkRead(void *d, int64_t sz, int f) {
