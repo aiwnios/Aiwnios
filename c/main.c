@@ -2006,8 +2006,11 @@ static int64_t Boot(int64_t *) {
   } else
     BootAiwnios(NULL);
   glbl_table = Fs->hash_table;
-  if (hcrt)
-    loaded_hcrt = Load(hcrt, hcrt_size);
+  loaded_hcrt = Load(hcrt, hcrt_size);
+  if (!loaded_hcrt) {
+    fprintf(stderr, "HCRT2.BIN is missing or has an incomplete header; run with -b to bootstrap it.\n");
+    exit(EXIT_FAILURE);
+  }
 }
 static int64_t quit = 0, quit_code = 0;
 static void AiwniosBye() {
