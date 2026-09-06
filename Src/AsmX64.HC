@@ -327,6 +327,14 @@ class CX86Opcode:CHash {
 //It is the added reg to the opcode
   I8 addi_reg,arity,pad[6];
 };
+Bool X86OpcodeUsesRel8(CX86Opcode *opc)
+{
+  I64 i;
+  for(i=0;i<4;i++)
+    if(opc->operands[i].u8[0]==X86_OPERAND_REL8)
+      return TRUE;
+  return FALSE;
+}
 Bool ModeMatch(U16 md,CX86AddrMode *mode,I64 mem_sz,Bool mem_only=FALSE) {
   switch(md.u8[0]) {
     case X86_OPERAND_R8:
@@ -1357,7 +1365,7 @@ CAiwniosAOTBlob *PrsAsmBlk(CCmpCtrl *cc,I64 flags=0) {
   I64 old_flags=cc->flags;
   I64 old_class_dol_offset=cc->class_dol_offset;
   CHashGeneric *asm_entry;
-  Bool one_ins=FALSE,has_zero_arity;
+  Bool one_ins=FALSE,has_zero_arity,has_unresolved,best_uses_rel8,uses_rel8;
   if(flags&CMPF_ONE_ASM_INS) {
     one_ins=TRUE;
     goto enter0;
@@ -1435,13 +1443,22 @@ enter:
         throw('Asm');
       }
     }
+    has_unresolved=FALSE;
+    for(tmp=0;tmp<arg_cnt;tmp++)
+      if(modes[tmp]->machine_code)
+        has_unresolved=TRUE;
     best=NULL,best_sz=I64_MAX;
+    best_uses_rel8=FALSE;
     for(opc=first_opc;opc;opc=opc->next) {
       if(!StrCmp(first_opc->str,opc->str))
        if(opc->arity==arg_cnt && OpcodePassesModes(opc,modes)) {
 	  sz=X86EncodeOpcode(len,seg_size,opc,modes,NULL,NULL);
-	  if(sz<best_sz) {
+	  uses_rel8=X86OpcodeUsesRel8(opc);
+	  if(!best||has_unresolved&&(best_uses_rel8&&!uses_rel8||
+	        best_uses_rel8==uses_rel8&&sz<best_sz)||
+	        !has_unresolved&&sz<best_sz) {
 	    best_sz=sz;
+	    best_uses_rel8=uses_rel8;
 	    best=opc;
 	  }
         }
