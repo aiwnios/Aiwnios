@@ -383,6 +383,11 @@ r64:
       goto r64;
     case X86_OPERAND_IMM8:
       if(mem_only) return FALSE;
+      if(mode->operand_sz!=-1&&mode->operand_sz!=1)
+        return FALSE;
+      //An unresolved expression cannot be proven to fit a signed byte.
+      if(mode->machine_code)
+        return FALSE;
       if(mode->type==X86MT_IMM)
         if(I8_MIN<=mode->imm<=U8_MAX)
 	  goto pass;
@@ -390,6 +395,12 @@ r64:
     case X86_OPERAND_IMM16:
       if(mem_only) return FALSE;
       if(mode->type==X86MT_IMM)
+        if(I16_MIN<=mode->imm<=U16_MAX)
+	  goto pass;
+      return FALSE;
+    case X86_OPERAND_EXPLICIT_IMM16:
+      if(mem_only) return FALSE;
+      if(mode->operand_sz==2&&mode->type==X86MT_IMM)
         if(I16_MIN<=mode->imm<=U16_MAX)
 	  goto pass;
       return FALSE;
@@ -1094,6 +1105,7 @@ rex|=0x40;
 		    sz=1;
 		    break;
 		  case X86_OPERAND_IMM16:
+		  case X86_OPERAND_EXPLICIT_IMM16:
 		    sz=2;
 		    break;
 		  case X86_OPERAND_IMM32:
@@ -1129,6 +1141,7 @@ rex|=0x40;
 		  to[len++]=modes[a]->imm;
 		  break;
 	        case X86_OPERAND_IMM16:
+	        case X86_OPERAND_EXPLICIT_IMM16:
 		  to[len](I16)=modes[a]->imm;
 		  len+=2;
 		  break;
