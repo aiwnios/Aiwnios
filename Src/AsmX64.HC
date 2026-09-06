@@ -400,6 +400,16 @@ r64:
         if(I8_MIN<=mode->imm<=U8_MAX)
 	  goto pass;
       return FALSE;
+    case X86_OPERAND_SIMM8:
+      if(mem_only) return FALSE;
+      if(mode->operand_sz!=-1&&mode->operand_sz!=1)
+        return FALSE;
+      if(mode->machine_code)
+        return FALSE;
+      if(mode->type==X86MT_IMM)
+        if(I8_MIN<=mode->imm<=I8_MAX)
+	  goto pass;
+      return FALSE;
     case X86_OPERAND_IMM16:
       if(mem_only) return FALSE;
       if(mode->type==X86MT_IMM)
@@ -1119,6 +1129,7 @@ rex|=0x40;
 		      sz=4;
 		    break;
 		  case X86_OPERAND_IMM8:
+		  case X86_OPERAND_SIMM8:
 		    sz=1;
 		    break;
 		  case X86_OPERAND_IMM16:
@@ -1155,6 +1166,7 @@ rex|=0x40;
 		  }
 		  break;
 	        case X86_OPERAND_IMM8:
+	        case X86_OPERAND_SIMM8:
 		  to[len++]=modes[a]->imm;
 		  break;
 	        case X86_OPERAND_IMM16:
