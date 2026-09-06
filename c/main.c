@@ -1039,6 +1039,10 @@ static int64_t STK___HC_ICAdd_Eq(int64_t *stk) {
   return (int64_t)__HC_ICAdd_Eq((CCodeCtrl *)stk[0]);
 }
 
+static int64_t STK___HC_ICAdd_Swap(int64_t *stk) {
+  return (int64_t)__HC_ICAdd_Swap((CCodeCtrl *)stk[0], stk[1]);
+}
+
 static int64_t STK___HC_ICAdd_Div(int64_t *stk) {
   return (int64_t)__HC_ICAdd_Div((CCodeCtrl *)stk[0]);
 }
@@ -1207,6 +1211,69 @@ static int64_t STK___HC_ICAdd_EqEq(int64_t *stk) {
 }
 static int64_t STK___HC_ICAdd_Neg(int64_t *stk) {
   return __HC_ICAdd_Neg(stk[0]);
+}
+static int64_t STK___HC_ICAdd_Bsf(int64_t *stk) {
+  return __HC_ICAdd_Bsf(stk[0]);
+}
+static int64_t STK___HC_ICAdd_Bsr(int64_t *stk) {
+  return __HC_ICAdd_Bsr(stk[0]);
+}
+static int64_t STK___HC_ICAdd_Rdtsc(int64_t *stk) {
+  return __HC_ICAdd_Rdtsc(stk[0]);
+}
+static int64_t STK___HC_ICAdd_GetRFlags(int64_t *stk) {
+  return __HC_ICAdd_GetRFlags(stk[0]);
+}
+static int64_t STK___HC_ICAdd_SetRFlags(int64_t *stk) {
+  return __HC_ICAdd_SetRFlags(stk[0]);
+}
+static int64_t STK___HC_ICAdd_SetRAX(int64_t *stk) {
+  return __HC_ICAdd_SetRAX(stk[0]);
+}
+static int64_t STK___HC_ICAdd_SetRBP(int64_t *stk) {
+  return __HC_ICAdd_SetRBP(stk[0]);
+}
+static int64_t STK___HC_ICAdd_SetRSP(int64_t *stk) {
+  return __HC_ICAdd_SetRSP(stk[0]);
+}
+static int64_t STK___HC_ICAdd_InU8(int64_t *stk) {
+  return __HC_ICAdd_InU8(stk[0]);
+}
+static int64_t STK___HC_ICAdd_InU16(int64_t *stk) {
+  return __HC_ICAdd_InU16(stk[0]);
+}
+static int64_t STK___HC_ICAdd_InU32(int64_t *stk) {
+  return __HC_ICAdd_InU32(stk[0]);
+}
+static int64_t STK___HC_ICAdd_OutU8(int64_t *stk) {
+  return __HC_ICAdd_OutU8(stk[0]);
+}
+static int64_t STK___HC_ICAdd_OutU16(int64_t *stk) {
+  return __HC_ICAdd_OutU16(stk[0]);
+}
+static int64_t STK___HC_ICAdd_OutU32(int64_t *stk) {
+  return __HC_ICAdd_OutU32(stk[0]);
+}
+static int64_t STK___HC_ICAdd_QueInit(int64_t *stk) {
+  return __HC_ICAdd_QueInit(stk[0]);
+}
+static int64_t STK___HC_ICAdd_QueIns(int64_t *stk) {
+  return __HC_ICAdd_QueIns(stk[0]);
+}
+static int64_t STK___HC_ICAdd_QueInsRev(int64_t *stk) {
+  return __HC_ICAdd_QueInsRev(stk[0]);
+}
+static int64_t STK___HC_ICAdd_QueRem(int64_t *stk) {
+  return __HC_ICAdd_QueRem(stk[0]);
+}
+static int64_t STK___HC_ICAdd_InvlPg(int64_t *stk) {
+  return __HC_ICAdd_InvlPg(stk[0]);
+}
+static int64_t STK___HC_ICAdd_StrLen(int64_t *stk) {
+  return __HC_ICAdd_StrLen(stk[0]);
+}
+static int64_t STK___HC_ICAdd_ModU64(int64_t *stk) {
+  return __HC_ICAdd_ModU64(stk[0]);
 }
 static int64_t STK___HC_ICAdd_Ret(int64_t *stk) {
   return __HC_ICAdd_Ret(stk[0]);
@@ -1538,6 +1605,9 @@ int64_t CmdLineBootFileCnt(int64_t *) {
 static int64_t STK__HC_ICAdd_ToBool(int64_t *stk) {
   return __HC_ICAdd_ToBool(stk[0]);
 }
+static int64_t STK__HC_ICAdd_ToUpper(int64_t *stk) {
+  return __HC_ICAdd_ToUpper(stk[0]);
+}
 static int64_t STK_WriteProtectMemCpy(int64_t *stk) {
   char *ptr = (void *)stk[0];
   int64_t r = (int64_t)WriteProtectMemCpy(ptr, (char *)stk[1], stk[2]);
@@ -1749,6 +1819,7 @@ static void BootAiwnios(char *bootstrap_text) {
                           //(this is for parser.c checks)
     */
     PrsAddSymbol("__HC_ICAdd_ToBool", STK__HC_ICAdd_ToBool, 1);
+    PrsAddSymbol("__HC_ICAdd_ToUpper", STK__HC_ICAdd_ToUpper, 1);
     PrsAddSymbol("__HC_ICAdd_GetVargsPtr", STK___HC_ICAdd_GetVargsPtr, 1);
     PrsAddSymbol("IsValidPtr", STK_IsValidPtr, 1);
     PrsAddSymbol("__HC_CmpCtrl_SetAOT", STK___HC_CmpCtrl_SetAOT, 1);
@@ -1774,6 +1845,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__HC_ICAdd_PostInc", STK___HC_ICAdd_PostInc, 2);
     PrsAddSymbol("__HC_ICAdd_Pow", STK___HC_ICAdd_Pow, 1);
     PrsAddSymbol("__HC_ICAdd_Eq", STK___HC_ICAdd_Eq, 1);
+    PrsAddSymbol("__HC_ICAdd_Swap", STK___HC_ICAdd_Swap, 2);
     PrsAddSymbol("__HC_ICAdd_Div", STK___HC_ICAdd_Div, 1);
     PrsAddSymbol("__HC_ICAdd_Sub", STK___HC_ICAdd_Sub, 1);
     PrsAddSymbol("__HC_ICAdd_Mul", STK___HC_ICAdd_Mul, 1);
@@ -1829,6 +1901,27 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__HC_ICAdd_Gs", STK___HC_ICAdd_Gs, 1);
     PrsAddSymbol("__HC_ICAdd_EqEq", STK___HC_ICAdd_EqEq, 1);
     PrsAddSymbol("__HC_ICAdd_Neg", STK___HC_ICAdd_Neg, 1);
+    PrsAddSymbol("__HC_ICAdd_Bsf", STK___HC_ICAdd_Bsf, 1);
+    PrsAddSymbol("__HC_ICAdd_Bsr", STK___HC_ICAdd_Bsr, 1);
+    PrsAddSymbol("__HC_ICAdd_Rdtsc", STK___HC_ICAdd_Rdtsc, 1);
+    PrsAddSymbol("__HC_ICAdd_GetRFlags", STK___HC_ICAdd_GetRFlags, 1);
+    PrsAddSymbol("__HC_ICAdd_SetRFlags", STK___HC_ICAdd_SetRFlags, 1);
+    PrsAddSymbol("__HC_ICAdd_SetRAX", STK___HC_ICAdd_SetRAX, 1);
+    PrsAddSymbol("__HC_ICAdd_SetRBP", STK___HC_ICAdd_SetRBP, 1);
+    PrsAddSymbol("__HC_ICAdd_SetRSP", STK___HC_ICAdd_SetRSP, 1);
+    PrsAddSymbol("__HC_ICAdd_InU8", STK___HC_ICAdd_InU8, 1);
+    PrsAddSymbol("__HC_ICAdd_InU16", STK___HC_ICAdd_InU16, 1);
+    PrsAddSymbol("__HC_ICAdd_InU32", STK___HC_ICAdd_InU32, 1);
+    PrsAddSymbol("__HC_ICAdd_OutU8", STK___HC_ICAdd_OutU8, 1);
+    PrsAddSymbol("__HC_ICAdd_OutU16", STK___HC_ICAdd_OutU16, 1);
+    PrsAddSymbol("__HC_ICAdd_OutU32", STK___HC_ICAdd_OutU32, 1);
+    PrsAddSymbol("__HC_ICAdd_QueInit", STK___HC_ICAdd_QueInit, 1);
+    PrsAddSymbol("__HC_ICAdd_QueIns", STK___HC_ICAdd_QueIns, 1);
+    PrsAddSymbol("__HC_ICAdd_QueInsRev", STK___HC_ICAdd_QueInsRev, 1);
+    PrsAddSymbol("__HC_ICAdd_QueRem", STK___HC_ICAdd_QueRem, 1);
+    PrsAddSymbol("__HC_ICAdd_InvlPg", STK___HC_ICAdd_InvlPg, 1);
+    PrsAddSymbol("__HC_ICAdd_StrLen", STK___HC_ICAdd_StrLen, 1);
+    PrsAddSymbol("__HC_ICAdd_ModU64", STK___HC_ICAdd_ModU64, 1);
     PrsAddSymbol("__HC_ICAdd_Ret", STK___HC_ICAdd_Ret, 1);
     PrsAddSymbol("__HC_ICAdd_Arg", STK___HC_ICAdd_Arg, 2);
     PrsAddSymbol("__HC_ICAdd_SetFrameSize", STK___HC_ICAdd_SetFrameSize, 2);

@@ -219,6 +219,8 @@ CRPN *ICFwd(CRPN *rpn) {
     goto unop;
   case IC_LOCK:
   case IC_CURRENT_PC:
+  case IC_RDTSC:
+  case IC_GET_RFLAGS:
   case IC_RAW_BYTES:
   case __IC_STATICS_SIZE:
   case __IC_SET_STATIC_DATA:
@@ -232,6 +234,7 @@ CRPN *ICFwd(CRPN *rpn) {
   case IC_GET_VARGS_PTR:
   case IC_TO_F64:
   case IC_TO_I64:
+  case IC_TO_UPPER:
   case IC_TO_BOOL:
     goto unop;
     break;
@@ -242,7 +245,22 @@ CRPN *ICFwd(CRPN *rpn) {
     return rpn->base.next;
     break;
   case IC_TYPECAST:
+  case IC_QUE_INIT:
+  case IC_QUE_REM:
+  case IC_INVLPG:
+  case IC_STRLEN:
+  case IC_IN_U8:
+  case IC_IN_U16:
+  case IC_IN_U32:
+  case IC_SET_RFLAGS:
+  case IC_SET_RAX:
+  case IC_SET_RBP:
+  case IC_SET_RSP:
     goto unop;
+    break;
+  case IC_QUE_INS:
+  case IC_QUE_INS_REV:
+    goto binop;
     break;
   case IC_COMMA:
   case IC_MAX_F64:
@@ -251,6 +269,9 @@ CRPN *ICFwd(CRPN *rpn) {
   case IC_MIN_F64:
   case IC_MIN_U64:
   case IC_MIN_I64:
+  case IC_OUT_U8:
+  case IC_OUT_U16:
+  case IC_OUT_U32:
     goto binop;
     break;
   case __IC_VARGS:
@@ -322,6 +343,8 @@ CRPN *ICFwd(CRPN *rpn) {
     abort();
     break;
   case IC_NEG:
+  case IC_BSF:
+  case IC_BSR:
   case IC_SQRT:
   unop:
     return ICFwd(rpn->base.next);
@@ -329,7 +352,6 @@ CRPN *ICFwd(CRPN *rpn) {
   case IC_SQR:
   case IC_POS:
     goto unop;
-    break;
   case IC_NAME:
     return rpn->base.next;
     break;
@@ -353,6 +375,8 @@ CRPN *ICFwd(CRPN *rpn) {
   case IC_LBTR:
   case IC_LBTS:
   case IC_LBTC:
+  case IC_SWAP:
+  case IC_MOD_U64:
   case IC_EQ:
     goto binop;
     break;
@@ -628,6 +652,9 @@ CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
   case IC_TO_BOOL:
     printf("TO_BOOL\n");
     goto unop;
+  case IC_TO_UPPER:
+    printf("TO_UPPER\n");
+    goto unop;
   case IC_GET_VARGS_PTR:
     printf("GET_VARGS_PTR:\n");
     return ParserDumpIR(rpn->base.next, indent + 1);
@@ -795,6 +822,49 @@ CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
     printf("NOP\n");
     goto ret;
     break;
+  case IC_RDTSC:
+    printf("RDTSC\n");
+    goto ret;
+    break;
+  case IC_GET_RFLAGS:
+    printf("GET_RFLAGS\n");
+    goto ret;
+    break;
+  case IC_QUE_INIT:
+    printf("QUE_INIT\n");
+    goto unop;
+    break;
+  case IC_QUE_INS:
+    printf("QUE_INS\n");
+    goto binop;
+  case IC_QUE_INS_REV:
+    printf("QUE_INS_REV\n");
+    goto binop;
+  case IC_QUE_REM:
+    printf("QUE_REM\n");
+    goto unop;
+  case IC_INVLPG:
+    printf("INVLPG\n");
+    goto unop;
+  case IC_IN_U8:
+  case IC_IN_U16:
+  case IC_IN_U32:
+    printf("IN\n");
+    goto unop;
+  case IC_SET_RFLAGS:
+  case IC_SET_RAX:
+  case IC_SET_RBP:
+  case IC_SET_RSP:
+    printf("SET_REG\n");
+    goto unop;
+  case IC_OUT_U8:
+  case IC_OUT_U16:
+  case IC_OUT_U32:
+    printf("OUT\n");
+    goto binop;
+  case IC_STRLEN:
+    printf("STRLEN\n");
+    goto unop;
   case IC_NAME:
     printf("NAME:%s\n", rpn->string);
     goto ret;
@@ -805,6 +875,14 @@ CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
     break;
   case IC_ADD:
     printf("+");
+    goto binop;
+    break;
+  case IC_SWAP:
+    printf("SWAP");
+    goto binop;
+    break;
+  case IC_MOD_U64:
+    printf("MOD_U64");
     goto binop;
     break;
   case IC_EQ:
@@ -990,6 +1068,12 @@ CRPN *ParserDumpIR(CRPN *rpn, int64_t indent) {
     printf("SQRT");
     goto unop;
     break;
+  case IC_BSF:
+    printf("BSF");
+    goto unop;
+  case IC_BSR:
+    printf("BSR");
+    goto unop;
   case IC_NEG:
     printf("-");
     goto unop;
@@ -1147,6 +1231,9 @@ int64_t DolDocDumpIR(char *to, int64_t len, CRPN *rpn) {
     return len;
   case IC_TO_BOOL:
     len = AddBytes(to, len, "$PURPLE$TO_BOOL$FD$\n");
+    goto unop;
+  case IC_TO_UPPER:
+    len = AddBytes(to, len, "$PURPLE$TO_UPPER$FD$\n");
     goto unop;
   case IC_GET_VARGS_PTR:
     len = AddBytes(to, len, "$PURPLE$GET_VARGS_PTR$FD$\n");
@@ -1311,6 +1398,43 @@ int64_t DolDocDumpIR(char *to, int64_t len, CRPN *rpn) {
   case IC_NOP:
     goto ret;
     break;
+  case IC_RDTSC:
+    len = AddBytes(to, len, "$PURPLE$RDTSC$FD$\n");
+    goto ret;
+    break;
+  case IC_GET_RFLAGS:
+    len = AddBytes(to, len, "$PURPLE$GET_RFLAGS$FD$\n");
+    goto ret;
+    break;
+  case IC_QUE_INIT:
+    len = AddBytes(to, len, "$PURPLE$QUE_INIT$FD$\n");
+    goto unop;
+    break;
+  case IC_QUE_INS:
+    len = AddBytes(to, len, "$PURPLE$QUE_INS$FD$\n");
+    goto binop;
+  case IC_QUE_INS_REV:
+    len = AddBytes(to, len, "$PURPLE$QUE_INS_REV$FD$\n");
+    goto binop;
+  case IC_QUE_REM:
+    len = AddBytes(to, len, "$PURPLE$QUE_REM$FD$\n");
+    goto unop;
+  case IC_INVLPG:
+    len = AddBytes(to, len, "$PURPLE$INVLPG$FD$\n");
+    goto unop;
+  case IC_IN_U8:
+  case IC_IN_U16:
+  case IC_IN_U32:
+    len = AddBytes(to, len, "$PURPLE$IN$FD$\n");
+    goto unop;
+  case IC_OUT_U8:
+  case IC_OUT_U16:
+  case IC_OUT_U32:
+    len = AddBytes(to, len, "$PURPLE$OUT$FD$\n");
+    goto binop;
+  case IC_STRLEN:
+    len = AddBytes(to, len, "$PURPLE$STRLEN$FD$\n");
+    goto unop;
   case IC_NAME:
     goto ret;
     break;
@@ -1320,6 +1444,14 @@ int64_t DolDocDumpIR(char *to, int64_t len, CRPN *rpn) {
     break;
   case IC_ADD:
     len = AddBytes(to, len, "$PURPLE$+$FD$\n");
+    goto binop;
+    break;
+  case IC_SWAP:
+    len = AddBytes(to, len, "$PURPLE$SWAP$FD$\n");
+    goto binop;
+    break;
+  case IC_MOD_U64:
+    len = AddBytes(to, len, "$PURPLE$MOD_U64$FD$\n");
     goto binop;
     break;
   case IC_EQ:
@@ -1506,6 +1638,12 @@ int64_t DolDocDumpIR(char *to, int64_t len, CRPN *rpn) {
     len = AddBytes(to, len, "$PURPLE$SQR$FD$\n");
     goto unop;
     break;
+  case IC_BSF:
+    len = AddBytes(to, len, "$PURPLE$BSF$FD$\n");
+    goto unop;
+  case IC_BSR:
+    len = AddBytes(to, len, "$PURPLE$BSR$FD$\n");
+    goto unop;
   case IC_NEG:
     len = AddBytes(to, len, "$PURPLE$-a$FD$\n");
     goto unop;
@@ -1539,6 +1677,8 @@ static int64_t IsRightAssoc(int64_t ic) {
   case IC_LNOT:
   case IC_POS:
   case IC_NEG:
+  case IC_BSF:
+  case IC_BSR:
   case IC_SQRT:
   case IC_EQ:
   case IC_ADD_EQ:
@@ -3415,6 +3555,17 @@ int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
   if (rpn->raw_type)
     return rpn->raw_type;
   switch (rpn->type) {
+  case IC_SWAP:
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));
+    return rpn->raw_type = RT_U0;
+    break;
+  case IC_MOD_U64:
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));
+    rpn->ic_class = HashFind("U64i", Fs->hash_table, HTT_CLASS, 1);
+    return rpn->raw_type = RT_U64i;
+    break;
   case IC_SQRT:
     AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
     rpn->ic_class = HashFind("F64", Fs->hash_table, HTT_CLASS, 1);
@@ -3443,6 +3594,8 @@ int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
     break;
   case IC_FS:
   case IC_GS:
+  case IC_RDTSC:
+  case IC_GET_RFLAGS:
     rpn->ic_class = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
     return rpn->raw_type = RT_I64i;
     break;
@@ -3450,6 +3603,51 @@ int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
                 // whole
     AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
     return rpn->raw_type = RT_U0; // dummy
+    break;
+  case IC_QUE_INIT:
+  case IC_QUE_REM:
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    return rpn->raw_type = RT_U0;
+    break;
+  case IC_QUE_INS:
+  case IC_QUE_INS_REV:
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    return rpn->raw_type = RT_U0;
+    break;
+  case IC_INVLPG:
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    return rpn->raw_type = RT_U0;
+    break;
+  case IC_SET_RFLAGS:
+  case IC_SET_RAX:
+  case IC_SET_RBP:
+  case IC_SET_RSP:
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    return rpn->raw_type = RT_U0;
+    break;
+  case IC_IN_U8:
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    rpn->ic_class = HashFind("U8i", Fs->hash_table, HTT_CLASS, 1);
+    return rpn->raw_type = RT_U8i;
+  case IC_IN_U16:
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    rpn->ic_class = HashFind("U16i", Fs->hash_table, HTT_CLASS, 1);
+    return rpn->raw_type = RT_U16i;
+  case IC_IN_U32:
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    rpn->ic_class = HashFind("U32i", Fs->hash_table, HTT_CLASS, 1);
+    return rpn->raw_type = RT_U32i;
+  case IC_OUT_U8:
+  case IC_OUT_U16:
+  case IC_OUT_U32:
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 1));
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    return rpn->raw_type = RT_U0;
+  case IC_STRLEN:
+    AssignRawTypeToNode(ccmp, ICArgN(rpn, 0));
+    rpn->ic_class = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
+    return rpn->raw_type = RT_I64i;
     break;
   case IC_BT:
   case IC_BTR:
@@ -3474,6 +3672,7 @@ int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
     return rpn->raw_type = RT_I64i;
     break;
   case IC_TO_BOOL:
+  case IC_TO_UPPER:
     AssignRawTypeToNode(ccmp, rpn->base.next);
   case IC_TO_I64:
     rpn->ic_class = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1);
@@ -3566,6 +3765,8 @@ int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
     return rpn->raw_type = rpn->ic_class->raw_type;
     break;
   case IC_NEG:
+  case IC_BSF:
+  case IC_BSR:
   unop:
     AssignRawTypeToNode(ccmp, rpn->base.next);
     if (BETWEEN(((CRPN *)rpn->base.next)->raw_type, RT_I8i, RT_U32i)) {
@@ -3581,7 +3782,6 @@ int64_t AssignRawTypeToNode(CCmpCtrl *ccmp, CRPN *rpn) {
     break;
   case IC_POS:
     goto unop;
-    break;
   case IC_NAME:
     abort();
     break;
@@ -4614,8 +4814,40 @@ HC_IC_BINDING(HC_ICAdd_Ne, IC_NE);
 HC_IC_BINDING(HC_ICAdd_Lsh, IC_LSH);
 HC_IC_BINDING(HC_ICAdd_Rsh, IC_RSH);
 HC_IC_BINDING(HC_ICAdd_Neg, IC_NEG);
+HC_IC_BINDING(HC_ICAdd_Bsf, IC_BSF);
+HC_IC_BINDING(HC_ICAdd_Bsr, IC_BSR);
+HC_IC_BINDING(HC_ICAdd_Rdtsc, IC_RDTSC);
+HC_IC_BINDING(HC_ICAdd_GetRFlags, IC_GET_RFLAGS);
+HC_IC_BINDING(HC_ICAdd_SetRFlags, IC_SET_RFLAGS);
+HC_IC_BINDING(HC_ICAdd_SetRAX, IC_SET_RAX);
+HC_IC_BINDING(HC_ICAdd_SetRBP, IC_SET_RBP);
+HC_IC_BINDING(HC_ICAdd_SetRSP, IC_SET_RSP);
+HC_IC_BINDING(HC_ICAdd_InU8, IC_IN_U8);
+HC_IC_BINDING(HC_ICAdd_InU16, IC_IN_U16);
+HC_IC_BINDING(HC_ICAdd_InU32, IC_IN_U32);
+HC_IC_BINDING(HC_ICAdd_OutU8, IC_OUT_U8);
+HC_IC_BINDING(HC_ICAdd_OutU16, IC_OUT_U16);
+HC_IC_BINDING(HC_ICAdd_OutU32, IC_OUT_U32);
+HC_IC_BINDING(HC_ICAdd_QueInit, IC_QUE_INIT);
+HC_IC_BINDING(HC_ICAdd_QueIns, IC_QUE_INS);
+HC_IC_BINDING(HC_ICAdd_QueInsRev, IC_QUE_INS_REV);
+HC_IC_BINDING(HC_ICAdd_QueRem, IC_QUE_REM);
+HC_IC_BINDING(HC_ICAdd_InvlPg, IC_INVLPG);
+HC_IC_BINDING(HC_ICAdd_StrLen, IC_STRLEN);
 HC_IC_BINDING(HC_ICAdd_And, IC_AND);
 HC_IC_BINDING(HC_ICAdd_Ret, IC_RET);
+
+CRPN *__HC_ICAdd_Swap(CCodeCtrl *cc, int64_t width) {
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type = IC_SWAP,
+      .integer = width,
+      .raw_type = RT_U0,
+  };
+  QueIns(rpn, cc->ir_code);
+  return rpn;
+}
+HC_IC_BINDING(HC_ICAdd_ModU64, IC_MOD_U64);
 
 CRPN *__HC_ICAdd_SetFrameSize(CCodeCtrl *cc, int64_t arg) {
   CRPN *rpn;
@@ -5113,6 +5345,7 @@ void __HC_CmpCtrl_SetInterrupt(CCmpCtrl *cc, int64_t has_error_code) {
     cc->flags |= CCF_INTERRUPT_ERROR_CODE;
 }
 HC_IC_BINDING(HC_ICAdd_ToBool, IC_TO_BOOL);
+HC_IC_BINDING(HC_ICAdd_ToUpper, IC_TO_UPPER);
 HC_IC_BINDING(HC_ICAdd_BT, IC_BT);
 HC_IC_BINDING(HC_ICAdd_BTC, IC_BTC);
 HC_IC_BINDING(HC_ICAdd_BTS, IC_BTS);

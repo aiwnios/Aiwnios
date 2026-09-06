@@ -649,6 +649,8 @@ loop:
       goto binop_next;
       break;
     case IC_EQ:
+    case IC_SWAP:
+    case IC_MOD_U64:
       goto next1;
       break;
     case IC_SUB:
@@ -703,6 +705,20 @@ loop:
       goto binop_next;
       break;
     case IC_DEREF:
+    case IC_QUE_INIT:
+    case IC_QUE_REM:
+    case IC_INVLPG:
+    case IC_STRLEN:
+    case IC_IN_U8:
+    case IC_IN_U16:
+    case IC_IN_U32:
+    case IC_OUT_U8:
+    case IC_OUT_U16:
+    case IC_OUT_U32:
+      goto next1;
+      break;
+    case IC_QUE_INS:
+    case IC_QUE_INS_REV:
       goto next1;
       break;
     case IC_AND:
@@ -1118,6 +1134,8 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
       continue;
       break;
     case IC_EQ:
+    case IC_SWAP:
+    case IC_MOD_U64:
       continue;
       break;
     case IC_SUB:
@@ -1130,6 +1148,18 @@ void OptPassRegAlloc(CCmpCtrl *cctrl) {
       continue;
       break;
     case IC_DEREF:
+    case IC_QUE_INIT:
+    case IC_QUE_INS:
+    case IC_QUE_INS_REV:
+    case IC_QUE_REM:
+    case IC_INVLPG:
+    case IC_STRLEN:
+    case IC_IN_U8:
+    case IC_IN_U16:
+    case IC_IN_U32:
+    case IC_OUT_U8:
+    case IC_OUT_U16:
+    case IC_OUT_U32:
       continue;
       break;
     case IC_AND:

@@ -40,6 +40,7 @@ import U8 * __HC_ICAdd_PostInc(U8*,I64);
 import U8 * __HC_ICAdd_Pow(U8 *);
 import U8 * __HC_ICAdd_Lock(U8 *);
 import U8 * __HC_ICAdd_Eq(U8*);
+import U8 * __HC_ICAdd_Swap(U8*,I64);
 import U8 * __HC_ICAdd_Div(U8*);
 import U8 * __HC_ICAdd_Sub(U8*);
 import U8 * __HC_ICAdd_Mul(U8*);
@@ -48,6 +49,7 @@ import U8 * __HC_ICAdd_Deref(U8*,I64 rt,I64 ptrs);
 import U8 * __HC_ICAdd_Comma(U8*);
 import U0 __HC_ICSetLock(U8*);
 import U8 * __HC_ICAdd_ToBool(U8*);
+import U8 * __HC_ICAdd_ToUpper(U8*);
 import U8 * __HC_ICAdd_Addr(U8*);
 import U8 * __HC_ICAdd_Xor(U8*);
 import U8 * __HC_ICAdd_Mod(U8*);
@@ -95,6 +97,27 @@ import U8 *__HC_ICAdd_Goto(U8*,U8*);
 import U8 *__HC_ICAdd_GotoIf(U8*,U8*)
 import U8 *__HC_ICAdd_Str(U8*,U8*); //Takes a AIWNIOS code misc
 import U8 *__HC_ICAdd_Neg(U8*);
+import U8 *__HC_ICAdd_Bsf(U8*);
+import U8 *__HC_ICAdd_Bsr(U8*);
+import U8 *__HC_ICAdd_Rdtsc(U8*);
+import U8 *__HC_ICAdd_GetRFlags(U8*);
+import U8 *__HC_ICAdd_SetRFlags(U8*);
+import U8 *__HC_ICAdd_SetRAX(U8*);
+import U8 *__HC_ICAdd_SetRBP(U8*);
+import U8 *__HC_ICAdd_SetRSP(U8*);
+import U8 *__HC_ICAdd_InU8(U8*);
+import U8 *__HC_ICAdd_InU16(U8*);
+import U8 *__HC_ICAdd_InU32(U8*);
+import U8 *__HC_ICAdd_OutU8(U8*);
+import U8 *__HC_ICAdd_OutU16(U8*);
+import U8 *__HC_ICAdd_OutU32(U8*);
+import U8 *__HC_ICAdd_QueInit(U8*);
+import U8 *__HC_ICAdd_QueIns(U8*);
+import U8 *__HC_ICAdd_QueInsRev(U8*);
+import U8 *__HC_ICAdd_QueRem(U8*);
+import U8 *__HC_ICAdd_InvlPg(U8*);
+import U8 *__HC_ICAdd_StrLen(U8*);
+import U8 *__HC_ICAdd_ModU64(U8*);
 import U8 *__HC_ICAdd_Ret(U8*);
 import U8 *__HC_ICAdd_Arg(U8*,I64);
 import U8 *__HC_ICAdd_SetFrameSize(U8*,I64);
@@ -144,6 +167,7 @@ extern U8 * __HC_ICAdd_PostDec(U8*,I64);
 extern U8 * __HC_ICAdd_PostInc(U8*,I64);
 extern U8 * __HC_ICAdd_Pow(U8 *);
 extern U8 * __HC_ICAdd_Eq(U8*);
+extern U8 * __HC_ICAdd_Swap(U8*,I64);
 extern U8 * __HC_ICAdd_Div(U8*);
 extern U8 * __HC_ICAdd_Sub(U8*);
 extern U8 * __HC_ICAdd_Mul(U8*);
@@ -200,6 +224,27 @@ extern U8 *__HC_ICAdd_Goto(U8*,U8*);
 extern U8 *__HC_ICAdd_GotoIf(U8*,U8*)
 extern U8 *__HC_ICAdd_Str(U8*,U8*); //Takes a AIWNIOS code misc
 extern U8 *__HC_ICAdd_Neg(U8*);
+extern U8 *__HC_ICAdd_Bsf(U8*);
+extern U8 *__HC_ICAdd_Bsr(U8*);
+extern U8 *__HC_ICAdd_Rdtsc(U8*);
+extern U8 *__HC_ICAdd_GetRFlags(U8*);
+extern U8 *__HC_ICAdd_SetRFlags(U8*);
+extern U8 *__HC_ICAdd_SetRAX(U8*);
+extern U8 *__HC_ICAdd_SetRBP(U8*);
+extern U8 *__HC_ICAdd_SetRSP(U8*);
+extern U8 *__HC_ICAdd_InU8(U8*);
+extern U8 *__HC_ICAdd_InU16(U8*);
+extern U8 *__HC_ICAdd_InU32(U8*);
+extern U8 *__HC_ICAdd_OutU8(U8*);
+extern U8 *__HC_ICAdd_OutU16(U8*);
+extern U8 *__HC_ICAdd_OutU32(U8*);
+extern U8 *__HC_ICAdd_QueInit(U8*);
+extern U8 *__HC_ICAdd_QueIns(U8*);
+extern U8 *__HC_ICAdd_QueInsRev(U8*);
+extern U8 *__HC_ICAdd_QueRem(U8*);
+extern U8 *__HC_ICAdd_InvlPg(U8*);
+extern U8 *__HC_ICAdd_StrLen(U8*);
+extern U8 *__HC_ICAdd_ModU64(U8*);
 extern U8 *__HC_ICAdd_Ret(U8*);
 extern U8 *__HC_ICAdd_Arg(U8*,I64);
 extern U8 *__HC_ICAdd_SetFrameSize(U8*,I64);
@@ -1993,7 +2038,8 @@ break;case IC_RIP:
     new=__HC_ICAdd_ToF64(cc2);
     break;case IC_TO_BOOL:
     new=__HC_ICAdd_ToBool(cc2);
-    break;case IC_TOUPPER:  //TODO
+    break;case IC_TOUPPER:
+    new=__HC_ICAdd_ToUpper(cc2);
     break;case IC_HOLYC_TYPECAST:
     new=__HC_ICAdd_Typecast(cc2,cur->ic_class->raw_type,0);
     break;case IC_ADDR:
@@ -2008,6 +2054,74 @@ break;case IC_RIP:
     new=__HC_ICAdd_LNot(cc2);
     break;case IC_UNARY_MINUS:
     new=__HC_ICAdd_Neg(cc2);
+#ifdef TARGET_X86
+    break;case IC_BSF:
+    new=__HC_ICAdd_Bsf(cc2);
+    break;case IC_BSR:
+    new=__HC_ICAdd_Bsr(cc2);
+    break;case IC_RDTSC:
+    new=__HC_ICAdd_Rdtsc(cc2);
+    break;case IC_GET_RFLAGS:
+    new=__HC_ICAdd_GetRFlags(cc2);
+    break;case IC_SET_RFLAGS:
+    new=__HC_ICAdd_SetRFlags(cc2);
+    break;case IC_SET_RAX:
+    new=__HC_ICAdd_SetRAX(cc2);
+    break;case IC_SET_RBP:
+    new=__HC_ICAdd_SetRBP(cc2);
+    break;case IC_SET_RSP:
+    new=__HC_ICAdd_SetRSP(cc2);
+    break;case IC_IN_U8:
+    new=__HC_ICAdd_InU8(cc2);
+    break;case IC_IN_U16:
+    new=__HC_ICAdd_InU16(cc2);
+    break;case IC_IN_U32:
+    new=__HC_ICAdd_InU32(cc2);
+    break;case IC_OUT_U8:
+    new=__HC_ICAdd_OutU8(cc2);
+    break;case IC_OUT_U16:
+    new=__HC_ICAdd_OutU16(cc2);
+    break;case IC_OUT_U32:
+    new=__HC_ICAdd_OutU32(cc2);
+    break;case IC_QUE_INIT:
+    new=__HC_ICAdd_QueInit(cc2);
+    break;case IC_QUE_INS:
+    new=__HC_ICAdd_QueIns(cc2);
+    break;case IC_QUE_INS_REV:
+    new=__HC_ICAdd_QueInsRev(cc2);
+    break;case IC_QUE_REM:
+    new=__HC_ICAdd_QueRem(cc2);
+    break;case IC_INVLPG:
+    new=__HC_ICAdd_InvlPg(cc2);
+    break;case IC_STRLEN:
+    new=__HC_ICAdd_StrLen(cc2);
+    break;case IC_MOD_U64:
+    new=__HC_ICAdd_ModU64(cc2);
+#else
+    break;case IC_BSF:
+    case IC_BSR:
+    case IC_RDTSC:
+    case IC_GET_RFLAGS:
+    case IC_SET_RFLAGS:
+    case IC_SET_RAX:
+    case IC_SET_RBP:
+    case IC_SET_RSP:
+    case IC_IN_U8:
+    case IC_IN_U16:
+    case IC_IN_U32:
+    case IC_OUT_U8:
+    case IC_OUT_U16:
+    case IC_OUT_U32:
+    case IC_QUE_INIT:
+    case IC_QUE_INS:
+    case IC_QUE_INS_REV:
+    case IC_QUE_REM:
+    case IC_INVLPG:
+    case IC_STRLEN:
+    case IC_MOD_U64:
+      PrintErr("Intrinsic is not implemented for this target\n");
+      throw('Compiler');
+#endif
     break;case IC_SQRT:
     new=__HC_ICAdd_Sqrt(cc2);
     break;case IC_DEREF:
@@ -2087,6 +2201,23 @@ break;case IC_RIP:
     new=__HC_ICAdd_XorXor(cc2);
     break;case IC_ASSIGN:
     new=__HC_ICAdd_Eq(cc2);
+#ifdef TARGET_X86
+    break;case IC_SWAP_U8:
+    new=__HC_ICAdd_Swap(cc2,1);
+    break;case IC_SWAP_U16:
+    new=__HC_ICAdd_Swap(cc2,2);
+    break;case IC_SWAP_U32:
+    new=__HC_ICAdd_Swap(cc2,4);
+    break;case IC_SWAP_I64:
+    new=__HC_ICAdd_Swap(cc2,8);
+#else
+    break;case IC_SWAP_U8:
+    case IC_SWAP_U16:
+    case IC_SWAP_U32:
+    case IC_SWAP_I64:
+      PrintErr("Intrinsic is not implemented for this target\n");
+      throw('Compiler');
+#endif
     //break;case IC_ASSIGN_PP //NOT USED BY AIWNIOS
     //break;case IC_ASSIGN_MM //DITTO
     break;case IC_SHL_EQU:
