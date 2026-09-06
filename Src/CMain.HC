@@ -188,8 +188,12 @@ CAOT *CmpJoin(CCmpCtrl *cc,I64 cmp_flags,U8 *map_name=NULL,U8 mapfile_drv_let=0)
     LinkedLstDel(aotc->bin);
     res=NULL;
   } else {
-    if (map_name)
-      DbgInfoWrite(cc->htc.glbl_hash_table,map_name);
+    if (map_name) {
+      if (Bt(&cc->opts,OPTf_TEMPLEOS))
+        TempleOSMapFileWrite(cc->htc.glbl_hash_table,map_name,mapfile_drv_let);
+      else
+        DbgInfoWrite(cc->htc.glbl_hash_table,map_name);
+    }
     FillInShortCalls(cc);
     HashTableDel(cc->htc.local_hash_table);
     HashTableDel(cc->htc.glbl_hash_table);

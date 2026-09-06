@@ -15,5 +15,6 @@ CMiscInit;
 #include "AIWNIOS_CodeGen.HC"
 #include "PrsStmt.HC";
 #include "AsmResolve.HC"
+#include "TempleOSMap.HC"
 #include "CMain.HC"
 //AiwniosAotCompile("HCRT_TOS.HC","HCRT.BIN")

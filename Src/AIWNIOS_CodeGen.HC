@@ -1485,7 +1485,7 @@ skip_convert:;
     __HC_CmpCtrl_SetRawAOTAsm(acc);
   if(info) {
     idx=cc->max_line-cc->min_line;
-    *info=MAlloc((idx+2)*8+sizeof(CDbgInfo));
+    *info=CAlloc((idx+2)*8+sizeof(CDbgInfo));
     info[0]->min_line=cc->min_line;
     info[0]->max_line=cc->max_line;
   }
