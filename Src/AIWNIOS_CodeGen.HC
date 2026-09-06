@@ -4,6 +4,7 @@
 //  your backend again when you port to another arch
 //
 #ifdef IMPORT_AIWNIOS_SYMS
+import U0 __HC_CmpCtrl_SetRawAOTAsm(U8 *);
 import U0 __HC_SetAOTRelocBeforeRIP(U8 *,I64); //See aiwn.h(TAKES number of bytes before current RIP the symbol is located at)
 import U8 *__HC_CmpCtrlDel(U8 *);
 import U8 *__HC_ICAdd_Sqr(U8 *);
@@ -570,6 +571,17 @@ Bool Globalify(U8 *addr,CAddShortRelocData *data) {
   }
   return FALSE;
 }
+U8 *AOTImportName(CHash *h) {
+  CHashSrcSym *src;
+  if(h->type&HTG_SRC_SYM) {
+    src=h;
+    if(src->import_nameim)
+      return src->import_nameim;
+    if(src->import_name)
+      return src->import_name;
+  }
+  return h->str;
+}
 U0 AddShortReloc(U8 *addr,CAddShortRelocData *data) {
   CAOTImportExport *tmpaie=CAlloc(sizeof(CAOTImportExport));
   #ifdef TARGET_RISCV
@@ -577,7 +589,7 @@ U0 AddShortReloc(U8 *addr,CAddShortRelocData *data) {
   #else
   tmpaie->type=IET_REL_I32;
   #endif
-  tmpaie->str=StrNew(data->cm->h->str);
+  tmpaie->str=StrNew(AOTImportName(data->cm->h));
   tmpaie->rip=data->cc->aotc->rip+(addr-data->machine_code);
   
   tmpaie->offset=data->cm->offset;
@@ -1320,6 +1332,8 @@ next_ic:
 U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info,Bool byte_code=FALSE) {
   CRPN *head=&cc->coc.coc_head,*cur,*new;
   CCodeMisc *misc,**table;
+  Bool relocate_glbl;
+  I64 relocation_value;
   CMemberLst *mlst,*mlst2;
   COptMemberVar *mv=NULL;
   CHashImport *h;
@@ -1407,6 +1421,8 @@ skip_convert:;
   #endif
   if(cc->flags&CCF_AOT_COMPILE)
     __HC_CmpCtrl_SetAOT(acc);
+  if(cc->flags&CCF_RAW_AOT_ASM)
+    __HC_CmpCtrl_SetRawAOTAsm(acc);
   if(info) {
     idx=cc->max_line-cc->min_line;
     *info=MAlloc((idx+2)*8+sizeof(CDbgInfo));
@@ -1907,7 +1923,8 @@ break;case IC_RIP:
           h(CHashFun*)->exe_addr
         );
       }
-    } else if(!(h->type&HTF_RESOLVE)) {
+    } else if (cc->flags&CCF_AOT_COMPILE || !(h->type&HTF_RESOLVE) ||
+          h->type&HTF_UNRESOLVED) {
         new=__HC_ICAdd_Reloc(
             acc,
             cc2,
@@ -1923,9 +1940,7 @@ break;case IC_RIP:
 	);
     }
     if(cc->flags&CCF_AOT_COMPILE) {
-      if(h->type&HTT_GLBL_VAR&&h->type&HTF_EXPORT) {
-        __HC_SetAOTRelocBeforeRIP(new,h(CHashGlblVar*)->data_addr_rip-cc->aotc->rip);
-      } else if(h->type&HTT_FUN&&!Bt(&(h(CHashFun*)->flags),Cf_EXTERN)) {
+      if(h->type&HTT_FUN&&!Bt(&(h(CHashFun*)->flags),Cf_EXTERN)) {
         __HC_SetAOTRelocBeforeRIP(new,h(CHashFun*)->exe_addr-cc->aotc->rip);
       }
     }
@@ -2185,6 +2200,8 @@ break;case IC_RIP:
 			   if(mlst->flags&MLF_STATIC) {
 				 if(mlst->static_data) {
 					MemCpy(tmpgh->data+mlst->offset,mlst->static_data,mlst->member_class->size*mlst->dim.total_cnt);
+					Free(mlst->static_data);
+					mlst->static_data=NULL;
 				 }
 			   }
 			   mlst=mlst->next;
@@ -2218,21 +2235,40 @@ break;case IC_RIP:
           }else if(IsTLSReloc(misc)) {
             tmpaie=CAlloc(sizeof(CAOTImportExport));
             tmpaie->type=IET_IMM_I64;
-            tmpaie->str=StrNew(misc->h->str);
+            tmpaie->str=StrNew(AOTImportName(misc->h));
             tmpaie->rip=cc->aotc->rip+(misc->addr(U8*)-machine_code);
             tmpaie->offset=misc->offset;
             QueIns(tmpaie,cc->aot->last_ie);
           } else if(misc->h->type&HTT_GLBL_VAR){
+            if (misc->h(CHashGlblVar*)->flags&GVF_EXTERN)
+              goto norm_reloc;
             fill_user_data.cc=cc;
 	    fill_user_data.cm=misc;
 	    fill_user_data.machine_code=machine_code;
-	    if(!Globalify(misc->addr,&fill_user_data))
-		  goto norm_reloc;
+            if (!Globalify(misc->addr,&fill_user_data)) {
+              relocate_glbl=FALSE;
+              if (!(misc->h(CHashGlblVar*)->flags&GVF_EXTERN))
+                relocate_glbl=TRUE;
+              if (misc->h(CHashGlblVar*)->flags&GVF_ALIAS)
+                relocate_glbl=TRUE;
+              if (Bt(&cc->opts,OPTf_RAW_AOT) && relocate_glbl) {
+                relocation_value=misc->h(CHashGlblVar*)->data_addr_rip+
+                      misc->offset;
+                WriteProtectMemCpy(misc->addr,&relocation_value,8);
+                tmpabs=CAlloc(sizeof(CAOTAbsAddr));
+                tmpabs->next=cc->aotc->abss;
+                tmpabs->type=AAT_ADD_U64;
+                tmpabs->rip=cc->aotc->rip+
+                      (misc->addr(U8*)-machine_code);
+                cc->aotc->abss=tmpabs;
+              } else
+                goto norm_reloc;
+            }
 	  } else {
 	  norm_reloc:
 	    tmpaie=CAlloc(sizeof(CAOTImportExport));
             tmpaie->type=IET_IMM_I64;
-            tmpaie->str=StrNew(misc->h->str);
+            tmpaie->str=StrNew(AOTImportName(misc->h));
             tmpaie->rip=cc->aotc->rip+(misc->addr(U8*)-machine_code);
             tmpaie->offset=misc->offset;
             QueIns(tmpaie,cc->aot->last_ie);
@@ -2243,10 +2279,11 @@ break;case IC_RIP:
           h=CAlloc(sizeof CHashImport);
           h->type=HTT_IMPORT_SYS_SYM;
           h->str=StrNew(misc->h->str);
+          foff=0;
+          WriteProtectMemCpy(misc->addr,&foff,8);
           h->module_base=machine_code;
-          //[reloc type 1][reloc offset 4][target-offset 4][name?]NULL]
-          //Nroot adds an aditional byte to specify NULL after we load the silly sauce 
-          h->module_header_entry=CAlloc(StrLen(h->str)+8+1+1);
+          //[reloc type 1][reloc offset 4][target-offset 4][name NUL]
+          h->module_header_entry=CAlloc(StrLen(h->str)+10);
           if(IsTLSReloc(misc))
 	    h->module_header_entry[0]=IET_IMM_I64;
           else 
@@ -2293,6 +2330,9 @@ break;case IC_RIP:
     if(cur->user_data2) I64SetDel(cur->user_data2);
     if(cur->type==IC_ASM) {
 //TODO AOT
+      if(cc->flags&CCF_AOT_COMPILE)
+        cur->ic_data(CAiwniosAOTBlob*)->final_start_rip=cc->aotc->rip+
+              (cur->ic_data(CAiwniosAOTBlob*)->final_start_addr-machine_code);
       JITFixupAiwniosAOTBlob(cc,cur->ic_data,cur->ic_data(CAiwniosAOTBlob*)->final_start_addr);
       AiwniosAOTBlobDel(cur->ic_data);
     }

@@ -1530,6 +1530,8 @@ public class CAutoCompleteDictGlbls
 #define OPTf_KEEP_RELOCATIONS 0x26 //Added by nroot,will keep the CHashImport's
 #define OPTf_BOUNDS_CHECK 0x27 //Added by nroot,Bounds checker
 #define OPTf_BYTE_CODE 0x28 //Added by nroot
+#define OPTf_TEMPLEOS 0x2A //TempleOS x86-64 ABI and module format
+#define OPTf_RAW_AOT 0x29
 
 #define OPTF_ECHO		(1<<OPTf_ECHO)
 
@@ -2171,6 +2173,7 @@ class CLexHashTableContext
 #define CCF_PAREN		0x2000000000
 #define CCf_PAREN		37
 #define CCF_CLASS_DOL_OFFSET	0x4000000000
+#define CCF_RAW_AOT_ASM		0x10000000000
 #define CCF_DONT_MAKE_RES	0x8000000000
 
 public class CCmpCtrl
@@ -4138,7 +4141,7 @@ extern U64 ToUpper(U64);
 extern U8 *FileRead(U8 *,I64 *,I64 *attr=NULL);
 extern U0 FileWrite(U8 *filename,U8 *fbuf,I64 size,CDate cdt=0,I64 attr=0);
 
-extern I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0);
+extern I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0,I64 opts=0);
 
 //Forward declarations
 extern Bool DirMk(U8 *filename,I64 entry_cnt=0);
@@ -4969,7 +4972,7 @@ extern U0 CtrlAltCBSet(U8 ch,U0 (*fp_hndlr)(I64 sc),
 	U8 *no_shift_desc=NULL,U8 *shift_desc=NULL,Bool in_irq=FALSE);
 extern U0 EdLineDown(CDoc *doc,I64 sc=I64_MIN);
 extern CAOT *CmpBuf(U8 *buf,U8 *map_name=NULL,
-  I64 *error_cnt=NULL, I64 *warning_cnt=NULL,U8 mapfile_drv_let=0);
+  I64 *error_cnt=NULL, I64 *warning_cnt=NULL,U8 mapfile_drv_let=0,I64 opts=0);
 extern I64 PressAKey();
 extern U8 *DocLineRead(U8 *filename,I64 line,CTask *mem_task=NULL);
 extern U8 *DocLineWrite(U8 *filename,I64 line,U8 *st);
@@ -6916,12 +6919,16 @@ class CAiwniosAOTBlob {
   I64 len;
   U8 *data;
   //private,used when placing ->data into it's final location
-  U8 **final_start_addr;
+  I64 final_start_rip;
+  U8 *final_start_addr;
 };
 extern U0 AiwniosAOTBlobDel(CAiwniosAOTBlob *b);
+extern U0 AsmUnresolvedAdd(CCmpCtrl *cc,U8 *machine_code,I64 type,I64 rip,
+      I64 rel_rip,CAsmUndefHash *local_asm_undef_hash,
+      CAsmUndefHash *glbl_asm_undef_hash,I64 line_num,Bool U8_avail);
 extern U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf);
 extern U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches);
-extern I64 X86EncodeOpcode(I64 rip,U8 *opc,U8 **modes,U8 *to,CQue *asm_patches);
+extern I64 X86EncodeOpcode(I64 rip,I64 seg_size,U8 *opc,U8 **modes,U8 *to,CQue *asm_patches);
 #ifdef TARGET_X86
 extern U8 SSE_ShuffleByte(I64 a,I64 b,I64 c,I64 d);
 #endif

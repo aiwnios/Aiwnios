@@ -1,7 +1,130 @@
+U0 AsmUnresolvedAdd(CCmpCtrl *cc,U8 *machine_code,I64 type,I64 rip,I64 rel_rip,
+      CAsmUndefHash *local_asm_undef_hash,CAsmUndefHash *glbl_asm_undef_hash,
+      I64 line_num,Bool U8_avail)
+{
+  CAsmUnresolvedRef *tmpu=MAlloc(sizeof(CAsmUnresolvedRef));
+  tmpu->machine_code=machine_code;
+  tmpu->type=type;
+  tmpu->rip=rip;
+  tmpu->rel_rip=rel_rip;
+  tmpu->aot=cc->aot;
+  tmpu->imm_flag=FALSE;
+  tmpu->line_num=line_num;
+  tmpu->U8_avail=U8_avail;
+  tmpu->str=NULL;
+  if (local_asm_undef_hash) {
+    tmpu->asm_undef_hash=local_asm_undef_hash;
+    tmpu->next=cc->aotc->local_unresolved;
+    cc->aotc->local_unresolved=tmpu;
+  } else {
+    tmpu->asm_undef_hash=glbl_asm_undef_hash;
+    tmpu->next=cc->aotc->glbl_unresolved;
+    cc->aotc->glbl_unresolved=tmpu;
+    if (glbl_asm_undef_hash->hash->type & HTF_IMPORT) {
+      tmpu->str=StrNew(glbl_asm_undef_hash->hash->str);
+      if (glbl_asm_undef_hash->hash->type & HTF_IMM)
+        tmpu->imm_flag=TRUE;
+    }
+  }
+}
+
+U0 AsmResolve(CCmpCtrl *cc,CAsmUnresolvedRef *tmpu,U8 *label,Bool undefined)
+{
+  CAOTImportExport *tmpie;
+  CAOTAbsAddr *tmpabs;
+  CAsmUndefHash *tmpauh;
+  I64 res=Call(tmpu->machine_code);
+  if (undefined) {
+    tmpauh=tmpu->asm_undef_hash;
+    while (tmpauh) {
+      if (tmpauh->hash->type & HTF_UNRESOLVED) {
+        tmpie=CAlloc(sizeof(CAOTImportExport));
+        tmpie->next=tmpauh->hash->ie_lst;
+        tmpauh->hash->ie_lst=tmpie;
+        tmpie->rip=tmpu->rip;
+        tmpie->aot=cc->aot;
+        tmpie->type=tmpu->type;
+      }
+      tmpauh=tmpauh->next;
+    }
+  } else if (!(tmpu->type&IEF_IMM_NOT_REL)) {
+    res-=tmpu->rel_rip;
+    if (tmpu->type==IET_REL_I8 && !(I8_MIN<=res<=I8_MAX) ||
+          tmpu->type==IET_REL_I16 && !(I16_MIN<=res<=I16_MAX)) {
+      PrintErr("Branch out of range at line:%04d %s\n",
+            tmpu->line_num,label);
+      LexExcept(cc);
+    }
+    if (tmpu->U8_avail && tmpu->type>IET_IMM_U8 && -124<=res<=123)
+      PrintWarn("could use I8 displacement at line:%04d %s %s\n",
+            tmpu->line_num,cc->aotc->last_label,label);
+  } else if (tmpu->type==IET_IMM_U32) {
+    for (tmpauh=tmpu->asm_undef_hash;tmpauh;tmpauh=tmpauh->next)
+      if (!(tmpauh->hash->type&HTF_IMM)) {
+        tmpabs=CAlloc(sizeof(CAOTAbsAddr));
+        tmpabs->next=cc->aotc->abss;
+        tmpabs->type=AAT_ADD_U32;
+        tmpabs->rip=tmpu->rip;
+        cc->aotc->abss=tmpabs;
+        break;
+      }
+  }
+  AOTStoreCodeU8At(cc,tmpu->rip,res.u8[0]);
+  if (tmpu->type>=IET_REL_I16) {
+    AOTStoreCodeU8At(cc,tmpu->rip+1,res.u8[1]);
+    if (tmpu->type>=IET_REL_I32) {
+      AOTStoreCodeU8At(cc,tmpu->rip+2,res.u8[2],res.u8[3]);
+      if (tmpu->type>=IET_REL_I64)
+        AOTStoreCodeU8At(cc,tmpu->rip+4,res.u8[4],res.u8[5],
+              res.u8[6],res.u8[7]);
+    }
+  }
+}
+
+U0 AsmExpressionImportsResolve(U8 *name,U8 *module_base,I64 value)
+{
+  CHashTable *table=Fs->hash_table;
+  CHashImport *entry;
+  I64 i,rel_off,resolved;
+
+  for (i=0;i<=table->mask;i++) {
+    entry=table->body[i];
+    while (entry) {
+      if (entry->type&HTT_IMPORT_SYS_SYM &&
+            entry->module_base==module_base &&
+            !StrCmp(entry->str,name)) {
+        rel_off=entry->module_header_entry[1](I32);
+        resolved=value+entry->module_header_entry[5](I32);
+        WriteProtectMemCpy(entry->module_base+rel_off,&resolved,8);
+        entry->type=HTT_INVALID;
+      }
+      entry=entry->next;
+    }
+  }
+}
+
+CHashExport *AOTResolvedAsmExportFind(CCmpCtrl *cc,U8 *name)
+{
+  CHashTable *table;
+  CHash *entry;
+  I64 i;
+
+  table=cc->htc.glbl_hash_table;
+  for (i=0;i<=table->mask;i++)
+    for (entry=table->body[i];entry;entry=entry->next)
+      if (entry->type&HTT_EXPORT_SYS_SYM && entry->type&HTF_EXPORT &&
+              !(entry->type&HTF_UNRESOLVED) &&
+              !StrCmp(entry->str,name))
+          return entry;
+  return NULL;
+}
+
 U0 AOTGlblsResolve(CCmpCtrl *cc,CAOT *tmpaot)
 {
   CAOTCtrl *aotc=cc->aotc;
   CHashFun *tmpf;
+  CHashGlblVar *tmpg;
+  CHashExport *resolved_export,*binding;
   CAsmUnresolvedRef *tmpu=aotc->glbl_unresolved,*tmpu1;
   I64 i,j;
   CAOTImportExport *tmpie,*tmpie1;
@@ -21,10 +144,35 @@ U0 AOTGlblsResolve(CCmpCtrl *cc,CAOT *tmpaot)
 	tmpex=tmpauh->hash;
 	if (tmpex->type & HTT_EXPORT_SYS_SYM&& tmpex->type & HTF_UNRESOLVED &&
 	      !(tmpex->type & HTF_IMPORT) &&
-	      (tmpf=HashFind(tmpex->str,cc->htc.hash_table_lst,HTT_FUN)) &&
+	      (tmpf=HashFind(tmpex->str,cc->htc.glbl_hash_table,HTT_FUN)) &&
 	      !Bt(&tmpf->flags,Cf_EXTERN)) {
 	  tmpex->val=tmpf->exe_addr;
 	  tmpex->type&=~HTF_UNRESOLVED;
+          AsmExpressionImportsResolve(tmpex->str,tmpu->machine_code,
+                tmpf->exe_addr);
+	  label=tmpauh->hash->str;
+        } else if (tmpex->type&HTT_EXPORT_SYS_SYM &&
+              tmpex->type&HTF_UNRESOLVED &&
+              !(tmpex->type&HTF_IMPORT) &&
+              (tmpg=HashFind(tmpex->str,cc->htc.glbl_hash_table,
+                    HTT_GLBL_VAR)) && !(tmpg->flags&GVF_EXTERN)) {
+          tmpex->val=tmpg->data_addr_rip;
+          tmpex->type&=~HTF_UNRESOLVED;
+          AsmExpressionImportsResolve(tmpex->str,tmpu->machine_code,
+                tmpg->data_addr_rip);
+          label=tmpauh->hash->str;
+	} else if (tmpex->type&HTT_EXPORT_SYS_SYM &&
+	      (resolved_export=AOTResolvedAsmExportFind(cc,tmpex->str))) {
+	  tmpex->val=resolved_export->val;
+	  tmpex->type&=~HTF_UNRESOLVED;
+          binding=CAlloc(sizeof CHashExport);
+          binding->type=HTT_EXPORT_SYS_SYM|HTF_RESOLVE;
+          binding->str=StrNew(tmpex->str);
+          binding->val=resolved_export->val;
+          HashAdd(binding,Fs->hash_table);
+          AsmExpressionImportsResolve(tmpex->str,tmpu->machine_code,
+                resolved_export->val);
+          HashRemDel(binding,Fs->hash_table);
 	  label=tmpauh->hash->str;
 	} else {
 	  if (!(tmpex->type & HTF_IMPORT)) {
@@ -48,7 +196,7 @@ U0 AOTGlblsResolve(CCmpCtrl *cc,CAOT *tmpaot)
 	label=tmpauh->hash->str;
       tmpauh=tmpauh->next;
     }
-    //AsmResolve(cc,tmpu,label,undefined); TODO restore ???
+    AsmResolve(cc,tmpu,label,undefined);
     Free(tmpu->machine_code);
     LinkedLstDel(tmpu->asm_undef_hash);
     Free(tmpu);
@@ -77,7 +225,8 @@ U0 AOTGlblsResolve(CCmpCtrl *cc,CAOT *tmpaot)
 	  PrintErr("Undefined sym at %s\n",tmpex->str);
 	  LexExcept(cc);
 	}
-	if (tmpex->type & HTF_RESOLVE) {
+	if (tmpex->type & HTF_RESOLVE &&
+	      tmpex->type & HTT_FUN) {
 	  tmpf=tmpex;
 	  tmpeu=tmpf->ext_lst;
 	  while (tmpeu) {

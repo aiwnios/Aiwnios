@@ -198,6 +198,27 @@ U0 LoadPass1(U8 *src,U8 *module_base,I64 ld_flags)
   }
 }
 
+Bool BinSignatureValid(U32 signature)
+{
+  if (signature==BIN_SIGNATURE_VAL)
+    return TRUE;
+#ifdef TARGET_BYTECODE
+  return signature=='BYTC';
+#endif
+#ifdef TARGET_X86
+  if (HOST_ABI=='OpenBSD')
+    return signature=='OX86';
+  return signature=='X86';
+#endif
+#ifdef TARGET_AARCH64
+  return signature=='ARM';
+#endif
+#ifdef TARGET_RISCV
+  return signature=='RV64';
+#endif
+  return FALSE;
+}
+
 U0 LoadPass2(U8 *src,U8 *module_base,I64)
 {
   U8 *st_ptr;
@@ -250,7 +271,7 @@ CBinFile *Load(U8 *filename,I64 ld_flags=0,CBinFile *bfh_addr=INVALID_PTR)
 
   //See $$LK,"Patch Table Generation",A="FF:::/Compiler/CMain.HC,IET_ABS_ADDR"$$
   module_align=1<<bfh->module_align_bits;
-  if (!module_align || bfh->bin_signature!=BIN_SIGNATURE_VAL) {
+  if (!module_align || !BinSignatureValid(bfh->bin_signature)) {
     Free(bfh);
     Free(fbuf);
     throw('BinModul');

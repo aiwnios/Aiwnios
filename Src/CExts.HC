@@ -40,4 +40,5 @@ extern I64 PrsUnaryTerm(
 extern U0 PrsVarInit2(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,
 	CArrayDim *tmpad,U8 *data_addr_rip,U8 **_base,Bool data_heap,I64 pass,CHash * to);
 extern U0 FillInShortCalls(CCmpCtrl *cc);
+extern CHash *AOTResolvedHashFind(CCmpCtrl *cc,U8 *name);
 extern CHashClass *AssignRawTypeToNode(CRPN *r);

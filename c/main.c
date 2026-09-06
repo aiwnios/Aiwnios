@@ -918,6 +918,11 @@ static int64_t STK___HC_CmpCtrl_SetAOT(int64_t *stk) {
   __HC_CmpCtrl_SetAOT((CCmpCtrl *)stk[0]);
 }
 
+static int64_t STK___HC_CmpCtrl_SetRawAOTAsm(int64_t *stk) {
+  __HC_CmpCtrl_SetRawAOTAsm((CCmpCtrl *)stk[0]);
+  return 0;
+}
+
 static int64_t STK__HC_ICAdd_RawBytes(int64_t *stk) {
   return (int64_t)__HC_ICAdd_RawBytes((CCmpCtrl *)stk[0], (char *)stk[1],
                                       stk[2]);
@@ -1729,6 +1734,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__HC_ICAdd_GetVargsPtr", STK___HC_ICAdd_GetVargsPtr, 1);
     PrsAddSymbol("IsValidPtr", STK_IsValidPtr, 1);
     PrsAddSymbol("__HC_CmpCtrl_SetAOT", STK___HC_CmpCtrl_SetAOT, 1);
+    PrsAddSymbol("__HC_CmpCtrl_SetRawAOTAsm", STK___HC_CmpCtrl_SetRawAOTAsm, 1);
     PrsAddSymbol("__HC_ICAdd_Typecast", STK___HC_ICAdd_Typecast, 3);
     PrsAddSymbol("__HC_ICAdd_SubCall", STK___HC_ICAdd_SubCall, 2);
     PrsAddSymbol("__HC_ICAdd_SubProlog", STK___HC_ICAdd_SubProlog, 1);

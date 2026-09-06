@@ -5082,6 +5082,10 @@ CRPN *__HC_ICAdd_StaticRef(CCodeCtrl *cc, int64_t off, int64_t rt,
 void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc) {
   cc->flags |= CCF_AOT_COMPILE;
 }
+
+void __HC_CmpCtrl_SetRawAOTAsm(CCmpCtrl *cc) {
+  cc->flags |= CCF_RAW_AOT_ASM;
+}
 HC_IC_BINDING(HC_ICAdd_ToBool, IC_TO_BOOL);
 HC_IC_BINDING(HC_ICAdd_BT, IC_BT);
 HC_IC_BINDING(HC_ICAdd_BTC, IC_BTC);

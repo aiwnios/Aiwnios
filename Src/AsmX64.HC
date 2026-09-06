@@ -10,7 +10,8 @@ class CAiwniosAOTBlob {
   I64 len;
   U8 *data;
   //private,used when placing ->data into it's final location
-  U8 **final_start_addr;
+  I64 final_start_rip;
+  U8 *final_start_addr;
 };
 U0 AiwniosAOTBlobDel(CAiwniosAOTBlob *b) {
   QueDel(b->asm_patches);
@@ -66,7 +67,7 @@ Bool PrsAsmImm(CCmpCtrl *cc,CX86AddrMode *arg)
   arg->glbl_asm_undef_hash=NULL;
   cc->asm_undef_hash=NULL;
   cc->abs_cnts=0;
-  cc->flags&=~(CCF_UNRESOLVED+CCF_LOCAL);
+  cc->flags&=~(CCF_UNRESOLVED+CCF_LOCAL+CCF_AOT_COMPILE);
   cc->flags|=CCF_ASM_EXPRESSIONS;
   if (!IsLexExpression2Bin(cc,&arg->machine_code))
     LexSkipEol(cc);
@@ -82,7 +83,7 @@ Bool PrsAsmImm(CCmpCtrl *cc,CX86AddrMode *arg)
 	cc->asm_undef_hash=NULL;
       }
     } else {
-      arg->imm=(*arg->machine_code)();
+      arg->imm=Call(arg->machine_code);
       arg->glbl_asm_undef_hash=cc->asm_undef_hash;
       cc->asm_undef_hash=NULL;
       Free(arg->machine_code);
@@ -1071,6 +1072,9 @@ rex|=0x40;
     to[len++]=0x66;
   }
 //Prefix group 4(Address size ovveride)
+  //There is no 16-bit ModRM encoder. TempleOS's 16-bit boot code keeps the
+  //upper halves clear, so address-size override plus the 32-bit form encodes
+  //its [SI]-style operands correctly.
   if (seg_size==16&&indir_mode ||
         seg_size==64&&indir_mode&&indir_mode->short_addr==1)
     to[len++]=0x67;
@@ -1245,9 +1249,10 @@ U0 AddBytesToBuf(U8 **_buf,I64 *len,I64 cnt,U8 *bytes) {
 class CToFill:CQue {
   CHashExport *h;
 };
-U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches) {
+U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches,CQue *to_fill) {
   CAsmPatch *patch;
   I64 b,i;
+  CToFill *tmp_to_fill;
   CAsmUndefHash *tab,*cur;
   CHashImport *h;
   CMemberLst *mlst;
@@ -1267,10 +1272,23 @@ U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches) {
     if(!tab) goto nxt;
     cur=tab;
     while(cur) {
+      for(tmp_to_fill=to_fill->next;tmp_to_fill!=to_fill;
+            tmp_to_fill=tmp_to_fill->next) {
+        if(!StrCmp(tmp_to_fill->h->str,cur->hash->str)) {
+          exp=CAlloc(sizeof CHashExport);
+          exp->type=HTT_EXPORT_SYS_SYM|HTF_RESOLVE;
+          exp->str=StrNew(tmp_to_fill->h->str);
+          exp->val=tmp_to_fill->h->val;
+          HashAdd(exp,Fs->hash_table);
+          SysSymImportsResolve(cur->hash->str,0);
+          HashRemDel(exp,Fs->hash_table);
+          goto resolved;
+        }
+      }
       if(cc->coc.coc_next_misc)
         for(cm=cc->coc.coc_next_misc;cm!=&cc->coc.coc_next_misc;cm=cm->next) {
 	  if(cm->addr2!=INVALID_PTR&&
-	        cm->type==CMT_GOTO_LABEL&&cm->str&&
+	        (cm->type==CMT_GOTO_LABEL||cm->type==CMT_ASM_LABEL)&&cm->str&&
 	        !StrCmp(cm->str,cur->hash->str)) {
 	    exp=CAlloc(sizeof CHashExport);
 	    exp->type=HTT_EXPORT_SYS_SYM|HTF_RESOLVE;
@@ -1304,7 +1322,7 @@ U0 AsmResolvePatches(CCmpCtrl *cc,CQue *patches) {
 resolved:
       cur=cur->next;
     }
-    patch->imm->off=(*patch->imm->machine_code)();
+    patch->imm->off=Call(patch->imm->machine_code);
     Free(patch->imm->machine_code);
     patch->imm->machine_code=NULL;
     LinkedLstDel(tab);
@@ -1312,55 +1330,150 @@ nxt:
     patch=patch->next;
   }
 }
+Bool AsmPatchResolveLabels(CCmpCtrl *cc,CAsmPatch *patch,CQue *to_fill)
+{
+  CAsmUndefHash *tab,*cur;
+  CToFill *label;
+  CMemberLst *member;
+  CHashExport *exp;
+  I64 fun_name_len=0;
+
+  if (cc->htc.fun)
+    fun_name_len=StrLen(cc->htc.fun->str);
+
+  if (tab=patch->imm->local_asm_undef_hash)
+    ;
+  else
+    tab=patch->imm->glbl_asm_undef_hash;
+  if (!tab)
+    return FALSE;
+
+  for (cur=tab;cur;cur=cur->next) {
+    for (label=to_fill->next;label!=to_fill;label=label->next)
+      if (!StrCmp(label->h->str,cur->hash->str))
+        break;
+    if (label==to_fill && (!fun_name_len ||
+          StrNCmp(cur->hash->str,cc->htc.fun->str,fun_name_len) ||
+          cur->hash->str[fun_name_len]!='.' ||
+          !(member=MemberFind(cur->hash->str+fun_name_len+1,cc->htc.fun))))
+      return FALSE;
+    exp=CAlloc(sizeof CHashExport);
+    exp->type=HTT_EXPORT_SYS_SYM|HTF_RESOLVE;
+    exp->str=StrNew(cur->hash->str);
+    if (label!=to_fill)
+      exp->val=label->h->val;
+    else
+      exp->val=-member->offset;
+    HashAdd(exp,Fs->hash_table);
+    AsmExpressionImportsResolve(cur->hash->str,patch->imm->machine_code,
+          exp->val);
+    HashRemDel(exp,Fs->hash_table);
+  }
+
+  patch->imm->off=Call(patch->imm->machine_code);
+  Free(patch->imm->machine_code);
+  patch->imm->machine_code=NULL;
+  LinkedLstDel(tab);
+  patch->imm->local_asm_undef_hash=NULL;
+  patch->imm->glbl_asm_undef_hash=NULL;
+  return TRUE;
+}
+
+U0 AsmPatchStore(CCmpCtrl *cc,U8 *buf,CAsmPatch *patch,I64 value)
+{
+  if (patch->sz==1) buf[patch->rip]=value;
+  else if (patch->sz==2) buf[patch->rip](U16)=value;
+  else if (patch->sz==4) buf[patch->rip](U32)=value;
+  else if (patch->sz==8) buf[patch->rip](U64)=value;
+  else LexExcept(cc,"Invalid assembler relocation size");
+}
+
+I64 AsmPatchRelocationType(CCmpCtrl *cc,CAsmPatch *patch)
+{
+  if (patch->sz==1) {
+      if (patch->is_rel) return IET_REL_I8;
+      else return IET_IMM_U8;
+  } else if (patch->sz==2) {
+      if (patch->is_rel) return IET_REL_I16;
+      else return IET_IMM_U16;
+  } else if (patch->sz==4) {
+      if (patch->is_rel) return IET_REL_I32;
+      else return IET_IMM_U32;
+  } else if (patch->sz==8) {
+      if (patch->is_rel) return IET_REL_I64;
+      else return IET_IMM_I64;
+  }
+  LexExcept(cc,"Invalid AOT assembler relocation size");
+  return 0;
+}
+
 U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
   CToFill *to_fill=blob->to_fill,*tmp_to_fill;
   CAsmPatch *patch,*next_patch;
-  I64 tmp,sz;
+  CAOTAbsAddr *tmpabs;
+  I64 tmp;
   tmp_to_fill=to_fill->next;
   while(tmp_to_fill!=to_fill) {
     tmp_to_fill->h->type&=~HTF_UNRESOLVED;
     tmp_to_fill->h->type|=HTF_RESOLVE;
-    tmp_to_fill->h->val+=buf;
+    if(cc->flags&CCF_AOT_COMPILE)
+      tmp_to_fill->h->val+=blob->final_start_rip;
+    else
+      tmp_to_fill->h->val+=buf;
     tmp_to_fill=tmp_to_fill->next;
   }
-  AsmResolvePatches(cc,blob->asm_patches);
-//If our relocations are not realtive,add the ptr to result
   patch=blob->asm_patches->next;
   if(cc->flags&CCF_AOT_COMPILE) {
-    if(patch!=blob->asm_patches)
-      LexExcept(cc,"AOT assembler not implemented yet for relocs");
+    while(patch!=blob->asm_patches) {
+      next_patch=patch->next;
+      if(patch->imm&&(patch->imm->local_asm_undef_hash||
+            patch->imm->glbl_asm_undef_hash)) {
+        if (AsmPatchResolveLabels(cc,patch,blob->to_fill)) {
+          tmp=patch->imm->off;
+          if (patch->is_rel)
+            tmp-=blob->final_start_rip+patch->rip+patch->sz;
+          AsmPatchStore(cc,buf,patch,tmp);
+          if(!patch->is_rel&&patch->sz==4) {
+            tmpabs=CAlloc(sizeof(CAOTAbsAddr));
+            tmpabs->next=cc->aotc->abss;
+            tmpabs->type=AAT_ADD_U32;
+            tmpabs->rip=blob->final_start_rip+patch->rip;
+            cc->aotc->abss=tmpabs;
+          }
+        } else {
+          AsmUnresolvedAdd(cc,patch->imm->machine_code,
+                AsmPatchRelocationType(cc,patch),
+                blob->final_start_rip+patch->rip,
+                blob->final_start_rip+patch->rip+patch->sz,
+                patch->imm->local_asm_undef_hash,
+                patch->imm->glbl_asm_undef_hash,
+                cc->lex_include_stk->line_num,FALSE);
+          patch->imm->machine_code=NULL;
+          patch->imm->local_asm_undef_hash=NULL;
+          patch->imm->glbl_asm_undef_hash=NULL;
+        }
+      } else if(patch->imm&&(patch->sz==1||patch->sz==2||
+            patch->sz==4||patch->sz==8)) {
+        tmp=patch->imm->off;
+        if(patch->is_rel)
+          tmp-=blob->final_start_rip+patch->rip+patch->sz;
+        AsmPatchStore(cc,buf,patch,tmp);
+        X86AddrModeDel(patch->imm);
+        patch->imm=NULL;
+      }
+      patch=next_patch;
+    }
     return;
   }
+  AsmResolvePatches(cc,blob->asm_patches,blob->to_fill);
+  patch=blob->asm_patches->next;
   while(patch!=blob->asm_patches) {
     next_patch=patch->next;
     if(patch->imm) {
       tmp=patch->imm->off;
-      switch(sz=patch->sz) {
-        case 1:
-	  if(patch->is_rel)
-	    buf[patch->rip]=tmp-(buf+sz+patch->rip);
-	  else
-	    buf[patch->rip]=tmp;
-	  break;
-        case 2:
-	  if(patch->is_rel)
-	    buf[patch->rip](U16)=tmp-(buf+sz+patch->rip);
-	  else
-	    buf[patch->rip](U16)=tmp;
-	  break;
-        case 4:
-	  if(patch->is_rel)
-	    buf[patch->rip](U32)=tmp-(buf+sz+patch->rip);
-	  else
-	    buf[patch->rip](U32)=tmp;
-	  break;
-        case 8:
-	  if(patch->is_rel)
-	    buf[patch->rip](U64)=tmp-(buf+sz+patch->rip);
-	  else
-	    buf[patch->rip](U64)=tmp;
-	  break;
-      }
+      if(patch->is_rel)
+        tmp-=buf+patch->sz+patch->rip;
+      AsmPatchStore(cc,buf,patch,tmp);
       Free(patch->imm);
       patch->imm=NULL;
     }
@@ -1493,7 +1606,25 @@ enter:
       seg_size=64;
       Lex(cc);
     } else if(!StrCmp(cc->hash_entry->str,"IMPORT")) {
-//TODO
+      Lex(cc);
+      while(cc->token&&cc->token!=';') {
+        if(cc->token!=TK_IDENT)
+          LexExcept(cc,"Expected identifier at");
+        exp=CAlloc(sizeof CHashExport);
+        exp->str=cc->cur_str;
+        cc->cur_str=NULL;
+        exp->type=HTT_EXPORT_SYS_SYM|HTF_UNRESOLVED;
+        HashSrcFileSet(cc,exp);
+        HashAdd(exp,cc->htc.glbl_hash_table);
+        exp->type|=HTF_IMPORT;
+        if(Lex(cc)==',')
+          Lex(cc);
+        else if(cc->token!=';')
+          LexExcept(cc,"Expected ',' or ';' at");
+      }
+      if(cc->token!=';')
+        LexExcept(cc,"Missing ';' at");
+      Lex(cc);
     } else if(!StrCmp(cc->hash_entry->str,"BINFILE")) {
       if(Lex(cc)!=TK_STR)
         LexExcept(cc,"Expected a filename.");

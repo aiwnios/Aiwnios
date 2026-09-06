@@ -8649,7 +8649,8 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       bin = MemGetWritePtr(xbin);
       code_off = 0;
     }
-    code_off = FuncProlog(cctrl, bin, code_off);
+    if (!(cctrl->flags & CCF_RAW_AOT_ASM))
+      code_off = FuncProlog(cctrl, bin, code_off);
     for (cnt = 0; cnt < cnt2; cnt++) {
     enter:
       cctrl->backend_user_data1 = 0;
@@ -8686,7 +8687,8 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       }
     }
     cctrl->epilog_label->addr = bin + code_off;
-    code_off = FuncEpilog(cctrl, bin, code_off);
+    if (!(cctrl->flags & CCF_RAW_AOT_ASM))
+      code_off = FuncEpilog(cctrl, bin, code_off);
     for (misc = cctrl->code_ctrl->code_misc->next;
          misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {
       int64_t old_code_off = code_off;
@@ -8769,7 +8771,10 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
           code_off += 8 - code_off % 8;
         misc->addr = bin + code_off;
         if (bin)
-          *(void **)((char *)MemGetWritePtr(bin) + code_off) = &DoNothing;
+          if (cctrl->flags & CCF_AOT_COMPILE)
+            *(void **)((char *)MemGetWritePtr(bin) + code_off) = NULL;
+          else
+            *(void **)((char *)MemGetWritePtr(bin) + code_off) = &DoNothing;
         code_off += 8;
         if (run == 2) {
           *(import = A_CALLOC(sizeof(CHashImport), NULL)) = (CHashImport){
@@ -8804,7 +8809,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
         goto fill_in_refs;
       }
     }
-    if (code_off % 8) // Align to 8
+    if (!(cctrl->flags & CCF_RAW_AOT_ASM) && code_off % 8) // Align to 8
       code_off += 8 - code_off % 8;
     cctrl->code_ctrl->statics_offset = code_off;
     cctrl->statics_label->addr = bin + cctrl->code_ctrl->statics_offset;

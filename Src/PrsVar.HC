@@ -43,11 +43,9 @@ U0 PrsVarInit(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,CArrayDim *tmpad,
       cc->flags=CCF_NO_ABSS | cc->flags &
 	    ~(CCF_AOT_COMPILE|CCF_HAS_MISC_DATA|CCF_NOT_CONST);
       machine_code=LexExpression2Bin(cc,&type);
-      if (old_flags&CCF_AOT_COMPILE
-	    /*cc->flags&CCF_NOT_CONST && */ //Const-folding is done in the C end
-	//Nroot forces all AOT globals to go on the heap for Apple hardedned runtime
-	    /*!Bt(&cc->opts,OPTf_GLBLS_ON_DATA_HEAP)*/
-	) {
+      if (old_flags&CCF_AOT_COMPILE &&
+            (!Bt(&cc->opts,OPTf_TEMPLEOS) ||
+            cc->flags&CCF_NOT_CONST)) {
 	cc->flags=cc->flags&~CCF_NO_ABSS|CCF_AOT_COMPILE;
 	Free(machine_code);
 	if (pass==2) {
@@ -145,6 +143,10 @@ U0 PrsVarInit2(CCmpCtrl *cc,U8 **_dst,CHashClass *tmpc,
       MemCpy(*_base,st,i);
 	*_dst=*_base+i;
       } else {
+	if (cc->flags&CCF_AOT_COMPILE && pass==2)
+	  for (j=0;j<tmpad1->cnt;j++)
+	    AOTStoreCodeU8At(cc,data_addr_rip+*_dst-*_base+j,
+		  st[j]);
 	MemCpy(*_dst,st,tmpad1->cnt);
 	*_dst+=tmpad1->cnt;
       }
@@ -598,8 +600,6 @@ pvl_restart3:
 	    tmpm->use_cnt=0;
 	    cc->flags|=CCF_DONT_MAKE_RES;
 	  }
-	  if (cc->flags&CCF_AOT_COMPILE)
-	    Free(tmpm->static_data);
 	  break;
 	case PRS1B_LOCAL_VAR:
 	  if (mode&PRSF_UNION) {

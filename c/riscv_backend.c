@@ -4721,7 +4721,8 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
       bin = A_MALLOC(1024 + code_off, heap ? heap : Fs->code_heap);
       code_off = 0;
     }
-    code_off = FuncProlog(cctrl, bin, code_off);
+    if (!(cctrl->flags & CCF_RAW_AOT_ASM))
+      code_off = FuncProlog(cctrl, bin, code_off);
     for (cnt = 0; cnt < cnt2; cnt++) {
     enter:
       r = forwards[cnt];
@@ -4749,7 +4750,8 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
     }
     cctrl->epilog_label->addr = bin + code_off;
     cctrl->epilog_label->code_off = code_off;
-    code_off = FuncEpilog(cctrl, bin, code_off);
+    if (!(cctrl->flags & CCF_RAW_AOT_ASM))
+      code_off = FuncEpilog(cctrl, bin, code_off);
     for (misc = cctrl->code_ctrl->code_misc->next;
          misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {
       int64_t old_code_off = code_off;
@@ -4885,7 +4887,7 @@ char *OptPassFinal(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
         goto fill_in_refs;
       }
     }
-    if (code_off % 8) // Align to 8
+    if (!(cctrl->flags & CCF_RAW_AOT_ASM) && code_off % 8) // Align to 8
       code_off += 8 - code_off % 8;
     cctrl->code_ctrl->statics_offset = code_off;
     cctrl->statics_label->addr = bin + cctrl->code_ctrl->statics_offset;

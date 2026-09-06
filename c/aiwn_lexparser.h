@@ -185,6 +185,7 @@ typedef struct CCmpCtrl {
 #define CCF_STRINGS_ON_HEAP          0x2
 #define CCF_AOT_COMPILE              0x4
 #define CCF_ICMOV_NO_USE_RAX         0x8
+#define CCF_RAW_AOT_ASM              0x10
   int64_t flags;
   CHashFun *cur_fun;
   CCodeCtrl *code_ctrl;
@@ -764,6 +765,7 @@ extern void *GenFFIBindingNaked(void *fptr, int64_t arity);
 extern void PrsBindCSymbolNaked(char *name, void *ptr, int64_t arity);
 extern void PrsBindCSymbol(char *name, void *ptr, int64_t arity);
 void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc);
+void __HC_CmpCtrl_SetRawAOTAsm(CCmpCtrl *cc);
 
 CRPN *__HC_ICAdd_GetVargsPtr(CCodeCtrl *cc);
 

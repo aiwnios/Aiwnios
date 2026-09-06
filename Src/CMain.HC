@@ -4,12 +4,14 @@ U8 *LexStmt2Bin(CCmpCtrl *cc,I64 *_type,I64 cmp_flags=0)
   CCodeCtrl *tmpcbh;
   CRPN *rpn;
   LBtr(&cc->flags,CCf_PASS_TRACE_PRESENT);
+  cc->flags&=~CCF_RAW_AOT_ASM;
   if (cc->aot_depth==2)
     COCPush(cc);
   COCInit(cc);
   if (!PrsStmt(cc,,,cmp_flags)) {
     if (cc->coc.coc_head.next!=&cc->coc.coc_head) {
       rpn=cc->coc.coc_head.next;
+      if (!(cc->flags&CCF_RAW_AOT_ASM))
       switch(rpn->type) {
         case IC_TO_I64:
         case IC_TO_F64:
@@ -75,7 +77,7 @@ U8 *LexStmt2Bin(CCmpCtrl *cc,I64 *_type,I64 cmp_flags=0)
 	  RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],FALSE);
 	  RPNAddNew(cc,IC_RET,0,cmp.internal_types[RT_I64],FALSE);
       }
-      if(cc->flags&CCF_AOT_COMPILE)
+      if(cc->flags&CCF_AOT_COMPILE && !(cc->flags&CCF_RAW_AOT_ASM))
 //ARM likes 4byte align for instrcutions
         while(cc->aotc->rip%4)
 	  AOTStoreCodeU8(cc,0);
@@ -86,9 +88,14 @@ U8 *LexStmt2Bin(CCmpCtrl *cc,I64 *_type,I64 cmp_flags=0)
       if (res) {
         if (cc->flags&CCF_AOT_COMPILE) {
 	  j=cc->aotc->rip;
-	  k=(size+7)>>3;
-	  for (i=0;i<k;i++)
-	    AOTStoreCodeU64(cc,res[i]);
+          if (cc->flags&CCF_RAW_AOT_ASM)
+            for (i=0;i<size;i++)
+              AOTStoreCodeU8(cc,res(U8*)[i]);
+          else {
+            k=(size+7)>>3;
+            for (i=0;i<k;i++)
+              AOTStoreCodeU64(cc,res[i]);
+          }
 	  Free(res);
 	  res=j;
         }
@@ -228,11 +235,12 @@ CAOT *CmpJoin(CCmpCtrl *cc,I64 cmp_flags,U8 *map_name=NULL,U8 mapfile_drv_let=0)
 }
 
 CAOT *CmpBuf(U8 *buf,U8 *map_name=NULL,
-  I64 *error_cnt=NULL, I64 *warning_cnt=NULL,U8 mapfile_drv_let=0)
+  I64 *error_cnt=NULL, I64 *warning_cnt=NULL,U8 mapfile_drv_let=0,I64 opts=0)
 {
   CCmpCtrl *cc;
   CAOT *res=NULL;
   cc=CmpCtrlNew(buf,CCF_DONT_FREE_BUF);
+  cc->opts=opts;
   cc->flags|=CCF_AOT_COMPILE;
   #ifdef TARGET_AARCH64
   //For MacOS RWX protections. 
@@ -254,12 +262,12 @@ CAOT *CmpBuf(U8 *buf,U8 *map_name=NULL,
   return res;
 }
 
-I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0)
+I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0,I64 opts=0)
 {//AOT Compile HC or PRJ file a and output BIN file. Returns err_cnt.
-  U8 *ptr,*fbuf=NULL,*fbuf2=NULL,*fbuf3=NULL,
+  U8 *ptr,*new_buf,*fbuf=NULL,*fbuf2=NULL,*fbuf3=NULL,
 	*patch_table=MAlloc(0x800000);
   CAOT *tmpaot;
-  I64 i,cnt,size=0,error_cnt=0,warning_cnt=0,aot_U8s=0;
+  I64 i,cnt,size=0,data_rip,error_cnt=0,warning_cnt=0,aot_U8s=0;
   CBinFile *bfh;
   CAOTImportExport *tmpie,*tmpie1;
   CAOTAbsAddr *tmpa,*tmpa1;
@@ -271,8 +279,52 @@ I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0)
   if (map_name)
     fbuf3=ExtDft(map_name,"MAP.Z");
 
-  if (tmpaot=CmpBuf(fbuf2,fbuf3,&error_cnt,&warning_cnt,mapfile_drv_let)) {
+  if (tmpaot=CmpBuf(fbuf2,fbuf3,&error_cnt,&warning_cnt,mapfile_drv_let,opts)) {
     aot_U8s=tmpaot->aot_U8s;
+    if (Bt(&opts,OPTf_TEMPLEOS) && tmpaot->heap_glbls) {
+      size=aot_U8s;
+      for (tmphg=tmpaot->heap_glbls;tmphg;tmphg=tmphg->next)
+        size=((size+7)&-8)+tmphg->size;
+      new_buf=MAlloc(size);
+      MemCpy(new_buf,tmpaot->buf,aot_U8s);
+      MemSet(new_buf+aot_U8s,0,size-aot_U8s);
+      Free(tmpaot->buf);
+      tmpaot->buf=new_buf;
+      tmphg=tmpaot->heap_glbls;
+      while (tmphg) {
+        tmphg1=tmphg->next;
+        data_rip=(aot_U8s+7)&-8;
+        if (tmphg->data)
+          MemCpy(tmpaot->buf+data_rip,tmphg->data,tmphg->size);
+        if (tmphg->str) {
+          tmpie=CAlloc(sizeof(CAOTImportExport));
+          tmpie->type=IET_REL32_EXPORT;
+          tmpie->rip=data_rip;
+          tmpie->str=tmphg->str;
+          QueIns(tmpie,tmpaot->last_ie);
+          tmphg->str=NULL;
+        }
+        tmphgr=tmphg->references;
+        while (tmphgr) {
+          tmphgr1=tmphgr->next;
+          *(tmpaot->buf+tmphgr->rip)(I64 *)+=data_rip+tmphgr->offset;
+          tmpa=CAlloc(sizeof(CAOTAbsAddr));
+          tmpa->type=AAT_ADD_U64;
+          tmpa->rip=tmphgr->rip;
+          tmpa->next=tmpaot->abss;
+          tmpaot->abss=tmpa;
+          Free(tmphgr);
+          tmphgr=tmphgr1;
+        }
+        aot_U8s=data_rip+tmphg->size;
+        Free(tmphg->str);
+        Free(tmphg->data);
+        Free(tmphg);
+        tmphg=tmphg1;
+      }
+      tmpaot->heap_glbls=NULL;
+      tmpaot->aot_U8s=aot_U8s;
+    }
     ptr=patch_table;
 //See $LK,"Load",A="MN:Load"$()
     cnt=0;
@@ -337,7 +389,7 @@ I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0)
     tmpie=tmpaot->next_ie;
     while (tmpie!=&tmpaot->next_ie) {
       tmpie1=tmpie->next;
-      if (!tmpie->type || IET_REL32_EXPORT<=tmpie->type<=IET_IMM64_EXPORT) {
+      if (IET_REL32_EXPORT<=tmpie->type<=IET_IMM64_EXPORT) {
 	QueRem(tmpie);
 	*ptr++=tmpie->type;
 	*ptr(U32 *)++=tmpie->rip;
@@ -359,13 +411,17 @@ I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0)
     while (tmpie!=&tmpaot->next_ie) {
       tmpie1=tmpie->next;
       QueRem(tmpie);
+      if (!tmpie->type)
+        goto skip_import;
       *ptr++=tmpie->type;
       if (tmpie->aot)
 	tmpie->rip+=tmpie->aot->rip2;
       *ptr(U32 *)++=tmpie->rip;
-      switch(tmpie->type) {
-      case IET_REL_I0 ... IET_REL_RISCV:
-		*ptr(I32 *)++=tmpie->offset;
+      if (!Bt(&opts,OPTf_TEMPLEOS)) {
+        switch(tmpie->type) {
+        case IET_REL_I0 ... IET_REL_RISCV:
+          *ptr(I32 *)++=tmpie->offset;
+        }
       }
       if (tmpie->str) {
 	i=StrLen(tmpie->str);
@@ -374,6 +430,7 @@ I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0)
 	ptr+=i+1;
       } else
 	*ptr++=0;
+skip_import:
       Free(tmpie->src_link);
       Free(tmpie);
       tmpie=tmpie1;
@@ -405,6 +462,8 @@ I64 Cmp(U8 *filename,U8 *map_name=NULL,U8 *out_name=NULL,U8 mapfile_drv_let=0)
 #ifdef TARGET_RISCV
     bfh->bin_signature='RV64';
 #endif
+    if (Bt(&opts,OPTf_TEMPLEOS))
+      bfh->bin_signature=BIN_SIGNATURE_VAL;
     MemCpy(bfh(U8 *)+sizeof(CBinFile),tmpaot->buf,aot_U8s);
     MemCpy(bfh(U8 *)+sizeof(CBinFile)+aot_U8s,patch_table,
 	  size-aot_U8s-sizeof(CBinFile));
@@ -551,17 +610,47 @@ I64 StreamExePrint(U8 *fmt,...)
   return res;
 }
 
+CHash *AOTResolvedHashFind(CCmpCtrl *cc,U8 *name)
+{
+  CHash *h;
+  CHashTable *table=cc->htc.glbl_hash_table;
+  I64 i;
+  for (i=0;i<=table->mask;i++)
+    for (h=table->body[i];h;h=h->next)
+      if (h->type&HTT_FUN && !StrCmp(h->str,name) &&
+            h->type&HTF_RESOLVE &&
+            0<=h(CHashFun*)->exe_addr<cc->aotc->rip)
+        return h;
+  for (i=0;i<=table->mask;i++)
+    for (h=table->body[i];h;h=h->next)
+      if (h->type&HTT_GLBL_VAR && !StrCmp(h->str,name) &&
+            !(h(CHashGlblVar*)->flags&GVF_EXTERN))
+        return h;
+  for (i=0;i<=table->mask;i++)
+    for (h=table->body[i];h;h=h->next)
+      if (h->type&HTT_EXPORT_SYS_SYM && !StrCmp(h->str,name) &&
+            h->type&HTF_RESOLVE)
+        return h;
+  return NULL;
+}
+
 //Added by nroot
 U0 FillInShortCalls(CCmpCtrl *cc) {
   CAOTImportExport *tmpaotie,*tmpaotie1;
+  CAOTAbsAddr *tmpabs;
   CHashFun *fun;
+  Bool value_resolved;
   I64 i,ptr,low12;
   for(tmpaotie=cc->aot->next_ie;tmpaotie!=&cc->aot->next_ie;tmpaotie=tmpaotie1) {
     tmpaotie1=tmpaotie->next;
     if(tmpaotie->short_jmp) {		  
-      fun=HashSingleTableFind(tmpaotie->str,cc->htc.glbl_hash_table,HTT_FUN|HTT_GLBL_VAR);
+      if (Bt(&cc->opts,OPTf_TEMPLEOS))
+        fun=AOTResolvedHashFind(cc,tmpaotie->str);
+      else
+        fun=HashSingleTableFind(tmpaotie->str,cc->htc.glbl_hash_table,
+              HTT_FUN|HTT_GLBL_VAR);
       if(fun&&fun->type&HTT_FUN) {
-		if(fun->type&HTF_RESOLVE) {
+		if (fun->type&HTF_RESOLVE) {
 		  #ifdef TARGET_RISCV
 		  ptr=fun->exe_addr+tmpaotie->offset;
 riscv_patch:
@@ -615,8 +704,51 @@ riscv_patch:
 			Free(tmpaotie->str);
 			Free(tmpaotie);
 skip:;
+      } else if (fun && fun->type&HTT_EXPORT_SYS_SYM &&
+            fun->type&HTF_RESOLVE) {
+#ifdef TARGET_X86
+        i=fun(CHashExport*)->val-(tmpaotie->rip+4)+tmpaotie->offset;
+        AOTStoreCodeU8At(cc,tmpaotie->rip,
+              i.u8[0],i.u8[1],i.u8[2],i.u8[3]);
+        QueRem(tmpaotie);
+        Free(tmpaotie->str);
+        Free(tmpaotie);
+#else
+        PrintErr("AOT export relocation is not implemented for this target\n");
+        throw('Compiler');
+#endif
+      }
+    } else if (Bt(&cc->opts,OPTf_TEMPLEOS) &&
+          tmpaotie->type==IET_IMM_I64 && tmpaotie->str) {
+      value_resolved=TRUE;
+      fun=AOTResolvedHashFind(cc,tmpaotie->str);
+      if (fun && fun->type&HTT_FUN && fun->type&HTF_RESOLVE)
+        i=fun->exe_addr+tmpaotie->offset;
+      else if (fun && fun->type&HTT_GLBL_VAR && fun->type&HTF_EXPORT &&
+            !(fun(CHashGlblVar*)->flags&(GVF_EXTERN|GVF_DATA_HEAP)))
+        i=fun(CHashGlblVar*)->data_addr_rip+tmpaotie->offset;
+      else if (fun && fun->type&HTT_EXPORT_SYS_SYM &&
+            fun->type&HTF_RESOLVE)
+        i=fun(CHashExport*)->val+tmpaotie->offset;
+      else
+        value_resolved=FALSE;
+      if (value_resolved) {
+        ptr=tmpaotie->rip;
+        if (tmpaotie->aot)
+          ptr+=tmpaotie->aot->rip2;
+        AOTStoreCodeU8At(cc,ptr,
+              i,i>>8,i>>16,i>>24);
+        AOTStoreCodeU8At(cc,ptr+4,
+              i>>32,i>>40,i>>48,i>>56);
+        tmpabs=CAlloc(sizeof(CAOTAbsAddr));
+        tmpabs->next=cc->aotc->abss;
+        tmpabs->type=AAT_ADD_U64;
+        tmpabs->rip=ptr;
+        cc->aotc->abss=tmpabs;
+        QueRem(tmpaotie);
+        Free(tmpaotie->str);
+        Free(tmpaotie);
       }
     }
   }
 }
-

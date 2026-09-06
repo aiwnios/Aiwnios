@@ -833,6 +833,19 @@ CCodeMisc *CodeMiscHashNew(CCmpCtrl *cc,CHash* h) {
   return cur;
 }
 
+U0 AsmExpressionRelocAdd(CCmpCtrl *cc,CHash *h)
+{
+  CAsmUndefHash *tmpauh;
+
+  if (cc->flags&CCF_ASM_EXPRESSIONS) {
+    tmpauh=CAlloc(sizeof CAsmUndefHash);
+    tmpauh->hash=h;
+    tmpauh->next=cc->asm_undef_hash;
+    cc->asm_undef_hash=tmpauh;
+    cc->flags|=CCF_UNRESOLVED;
+  }
+}
+
 U0 DbgPrint(U8 *fmt,...) {
   U8 *s=StrPrintJoin(NULL,fmt,argc,argv);
   DbgPutS(s);
@@ -996,6 +1009,8 @@ Bool PrsExpression(CCmpCtrl *cc,U8 **ul=NULL,I64 flags=0,CPrsStk *_ps=NULL) { //
   CHashClass *tmpc;
   CMemberLst *mlst;
   CAsmUndefHash *tmpauh;
+  U8 *lookahead;
+  Bool aot_fun_import;
 //u32[0] is type
   //u32[1] is prec
   CRPN *rpn,*rpn2;
@@ -1477,8 +1492,14 @@ found_end_square:
 	  last_consumes_right=0;
 	  Lex(cc);
 	  break;case TK_IDENT:
+	  if(cc->flags&CCF_ASM_EXPRESSIONS&&
+        HashFind(cc->cur_str,cmp.asm_hash,HTT_OPCODE|HTT_ASM_KEYWORD)) {
+	    finish=TRUE;
+	    break;
+	  }
 	  if(finish) break;
 	  last_consumes_right=0;
+          aot_fun_import=FALSE;
 	  if(cc->flags&CCF_ASM_EXPRESSIONS) {
 	    if(cc->local_var_entry&&cc->htc.fun) {
 	      if(flags&PEF_ADDR_OF) {
@@ -1491,12 +1512,29 @@ found_end_square:
 	      tmpex->str=MStrPrint("%s.%s",cc->htc.fun->str,cc->cur_str);
 	      tmpex->type=HTT_EXPORT_SYS_SYM | HTF_UNRESOLVED;
 	      goto ins_label;
-	    } else if(cc->hash_entry&&cc->hash_entry->type&HTT_CLASS) {
+	    } else if(cc->aot&&cc->hash_entry&&
+                  cc->hash_entry->type&HTT_FUN&&
+                  !Bt(&cc->hash_entry(CHashFun*)->flags,Ff_INTERNAL)) {
+              aot_fun_import=TRUE;
+              cc->hash_entry=NULL;
+              goto new;
+            } else if(cc->hash_entry&&cc->hash_entry->type&HTT_CLASS) {
 //MOV RAX, CTask.addr[RBX]
-	      PrsOffsetOf(cc);
-	      break;
+              lookahead=cc->cur_buf_ptr;
+              while(*lookahead&&*lookahead<=' ') lookahead++;
+              if(cc->flags&CCF_USE_LAST_U16&&cc->last_U16=='.'||
+                    *lookahead=='.') {
+	        PrsOffsetOf(cc);
+	        break;
+              }
+              cc->hash_entry=NULL;
+              goto new;
 	    } else if(!cc->hash_entry) {
 new:
+	      if(flags&PEF_ADDR_OF) {
+	        PrsPop(cc->ps);
+	        RPNDel(PrsPop2(cc->ps));
+	      }
 	      tmpex=CAlloc(sizeof(CHashExport));
 	      tmpex->str=StrNew(cc->cur_str);
 	      if (*tmpex->str=='@' && tmpex->str[1]=='@') {
@@ -1512,11 +1550,13 @@ new:
 	      } else {
 	        tmpex->type=HTT_EXPORT_SYS_SYM | HTF_UNRESOLVED;
 ins_label:
-	        tmpc=HashFind(tmpex->str,cc->htc.glbl_hash_table,HTT_EXPORT_SYS_SYM);
-	        if (tmpc)
-		  HashAddAfter(tmpex,tmpc,cc->htc.glbl_hash_table);
-	        else
-		  HashAdd(tmpex,cc->htc.glbl_hash_table);
+                if (!aot_fun_import) {
+	          tmpc=HashFind(tmpex->str,cc->htc.glbl_hash_table,HTT_EXPORT_SYS_SYM);
+	          if (tmpc)
+		    HashAddAfter(tmpex,tmpc,cc->htc.glbl_hash_table);
+	          else
+		    HashAdd(tmpex,cc->htc.glbl_hash_table);
+                }
 	      }
 	      cc->flags|=CCF_UNRESOLVED;
 	      rpn=RPNAddNew(
@@ -1538,6 +1578,7 @@ ins_label:
 		    CodeMiscHashNew(cc,cc->hash_entry),
 		    cmp.internal_types[RT_I64],
 		    );
+	      AsmExpressionRelocAdd(cc,cc->hash_entry);
 	      Lex(cc);
 	      goto fin_ident;
 	    } else if(cc->hash_entry->type&HTT_EXPORT_SYS_SYM) {
@@ -1588,6 +1629,7 @@ ins_label:
 		      CodeMiscHashNew(cc,cc->hash_entry),
 		      cc->hash_entry,
 		      );
+	          AsmExpressionRelocAdd(cc,cc->hash_entry);
 		      #ifdef TARGET_RISCV
 		      rpn->ic_data(CCodeMisc*)->flags|=CMF_SHORT_ADDR;
 		      #endif
@@ -1656,20 +1698,31 @@ ins_label:
 	        goto fin_ident;
 	      }
 	    } else if(cc->hash_entry->type&HTT_GLBL_VAR) {
-	      if(cc->hash_entry(CHashGlblVar*)->data_addr&&!(cc->flags&CCF_AOT_COMPILE)) {
+	      if(cc->hash_entry(CHashGlblVar*)->data_addr&&
+                    !(cc->flags&CCF_AOT_COMPILE)&&
+                    !(cc->aot&&cc->flags&CCF_ASM_EXPRESSIONS)) {
 	        rpn=RPNAddNew(
 		      cc,
 		      IC_IMM_I64,
 		      cc->hash_entry(CHashGlblVar*)->data_addr,
 		      cmp.internal_types[RT_I64],
 		      );
-	      } else if(cc->flags&CCF_AOT_COMPILE) {
+	      } else if(cc->flags&CCF_AOT_COMPILE||
+                    cc->aot&&cc->flags&CCF_ASM_EXPRESSIONS) {
+	        if (cc->flags&CCF_AOT_COMPILE)
+	          tmpex=cc->hash_entry;
+	        else {
+	          tmpex=CAlloc(sizeof CHashExport);
+	          tmpex->str=StrNew(cc->hash_entry->str);
+	          tmpex->type=HTT_EXPORT_SYS_SYM|HTF_UNRESOLVED;
+	        }
 	        rpn=RPNAddNew(
 		      cc,
 		      IC_ADDR_IMPORT,
-		      CodeMiscHashNew(cc,cc->hash_entry),
+		      CodeMiscHashNew(cc,tmpex),
 		      cc->hash_entry(CHashGlblVar*)->var_class,
 		      );
+	        AsmExpressionRelocAdd(cc,tmpex);
 	      } else {
 		  rpn=RPNAddNew(
 		      cc,
@@ -1702,12 +1755,21 @@ ins_label:
 	      rpn->ic_dim=cc->hash_entry(CHashGlblVar*)->dim.next;
 	      Lex(cc);
 	    } else if(cc->hash_entry->type&HTT_EXPORT_SYS_SYM) {
-	        rpn=RPNAddNew(
-		      cc,
-		      IC_IMM_I64,
-		      cc->hash_entry(CHashExport*)->val,
-		      cmp.internal_types[RT_I64],
-		      );
+              if (cc->flags&CCF_AOT_COMPILE &&
+                    !(cc->hash_entry->type&HTF_IMM))
+                rpn=RPNAddNew(
+                      cc,
+                      IC_ADDR_IMPORT,
+                      CodeMiscHashNew(cc,cc->hash_entry),
+                      cmp.internal_types[RT_I64],
+                      );
+              else
+                rpn=RPNAddNew(
+                      cc,
+                      IC_IMM_I64,
+                      cc->hash_entry(CHashExport*)->val,
+                      cmp.internal_types[RT_I64],
+                      );
 	      Lex(cc);
 	    } else if(cc->hash_entry->type&HTT_KEYWORD) {
 	      switch(cc->hash_entry(CHashGeneric *)->user_data0) {
@@ -1802,11 +1864,18 @@ U8 *LexExpression2Bin(CCmpCtrl *cc,I64 *_type=NULL)
 {//Compile cc expression. You call the code.
   U8 *res;
   I64 size;
+  CRPN *rpn;
   CHashFun *old_fun;
   Bool old_trace=LBtr(&cc->flags,CCf_PASS_TRACE_PRESENT);
   COCPush(cc);
   COCInit(cc);
   if (PrsExpression(cc,NULL,PEF_NO_COMMA)) {
+    if (Bt(&cc->opts,OPTf_TEMPLEOS))
+      for (rpn=cc->coc.coc_head.next;rpn!=&cc->coc.coc_head;rpn=rpn->next)
+        if (intermediate_code_table[rpn->type].not_const) {
+          cc->flags|=CCF_NOT_CONST;
+          break;
+        }
     RPNAddNew(cc,IC_RET,0,AssignRawTypeToNode(cc->coc.coc_head.next),FALSE);
     old_fun=cc->htc.fun; //Changed by nroot
     cc->htc.fun=NULL;

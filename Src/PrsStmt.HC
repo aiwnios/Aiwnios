@@ -453,6 +453,9 @@ U0 PrsGlblVarLst(CCmpCtrl *cc,I64 saved_mode,CHashClass *saved_tmpc,
 	PrsGlblInit(cc,tmpg,2);
 	if (cc->flags&CCF_AOT_COMPILE) {
 	  if (!Bt(&cc->opts,OPTf_GLBLS_ON_DATA_HEAP)) {
+	    if (Bt(&cc->opts,OPTf_TEMPLEOS))
+	      for (k=0;k<tmpg->size;k++)
+		AOTStoreCodeU8At(cc,tmpg->data_addr_rip+k,tmpg->data_addr[k]);
 	  } else
 //Nroot is modifing Load to include the ->data_addr in the IET_DATA_HEAP and in loader.c
 	    tmpg->heap_glbl->data=MAllocIdent(tmpg->data_addr);
@@ -1041,13 +1044,15 @@ CmpFixUpJITAsm(cc,tmpaot);
 		    if (tmpaot=PrsAsmBlk(cc)) {
 		      //If we are not in a function,we will jump past the assembly block
 		      // to avoid running it
-		      if(!cc->htc.fun) {
+		      if (!cc->htc.fun && Bt(&cc->opts,OPTf_RAW_AOT))
+			cc->flags|=CCF_RAW_AOT_ASM;
+		      else if(!cc->htc.fun) {
 		        g_lb=COCMiscNew(cc,CMT_LABEL);
 		        RPNAddNew(cc,IC_JMP,g_lb,NULL,FALSE);
 		      }
 		      RPNAddNew(cc,IC_ASM,tmpaot,NULL,FALSE);
 		      cc->flags|=CCF_HAS_MISC_DATA;
-		      if(!cc->htc.fun)
+		      if(!cc->htc.fun && !Bt(&cc->opts,OPTf_RAW_AOT))
 		        RPNAddNew(cc,IC_LABEL,g_lb,NULL,FALSE);
 		    }
 #endif
@@ -1055,13 +1060,15 @@ CmpFixUpJITAsm(cc,tmpaot);
 		    if (tmpaot=PrsAsmBlk(cc)) {
 		      //If we are not in a function,we will jump past the assembly block
 		      // to avoid running it
-		      if(!cc->htc.fun) {
+		      if (!cc->htc.fun && Bt(&cc->opts,OPTf_RAW_AOT))
+			cc->flags|=CCF_RAW_AOT_ASM;
+		      else if(!cc->htc.fun) {
 		        g_lb=COCMiscNew(cc,CMT_LABEL);
 		        RPNAddNew(cc,IC_JMP,g_lb,NULL,FALSE);
 		      }
 		      RPNAddNew(cc,IC_ASM,tmpaot,NULL,FALSE);
 		      cc->flags|=CCF_HAS_MISC_DATA;
-		      if(!cc->htc.fun)
+		      if(!cc->htc.fun && !Bt(&cc->opts,OPTf_RAW_AOT))
 		        RPNAddNew(cc,IC_LABEL,g_lb,NULL,FALSE);
 		    }
 #endif
@@ -1069,13 +1076,15 @@ CmpFixUpJITAsm(cc,tmpaot);
 		    if (tmpaot=PrsAsmBlk(cc)) {
 		      //If we are not in a function,we will jump past the assembly block
 		      // to avoid running it
-		      if(!cc->htc.fun) {
+		      if (!cc->htc.fun && Bt(&cc->opts,OPTf_RAW_AOT))
+			cc->flags|=CCF_RAW_AOT_ASM;
+		      else if(!cc->htc.fun) {
 		        g_lb=COCMiscNew(cc,CMT_LABEL);
 		        RPNAddNew(cc,IC_JMP,g_lb,NULL,FALSE);
 		      }
 		      RPNAddNew(cc,IC_ASM,tmpaot,NULL,FALSE);
 		      cc->flags|=CCF_HAS_MISC_DATA;
-		      if(!cc->htc.fun)
+		      if(!cc->htc.fun && !Bt(&cc->opts,OPTf_RAW_AOT))
 		        RPNAddNew(cc,IC_LABEL,g_lb,NULL,FALSE);
 		    }
 #endif
