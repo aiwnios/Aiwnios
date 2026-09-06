@@ -701,6 +701,14 @@ lex_float_start:
 	      goto lex_end;
 	    fbuf=ExtDft(cc->cur_str,"HC.Z");
 	    buf2=FileNameAbs(fbuf);
+	    if (!FileFind(buf2) && *fbuf!='/' && !StrOcc(fbuf,':') &&
+		cc->lex_include_stk && cc->lex_include_stk->full_name) {
+	      buf3=StrNew(cc->lex_include_stk->full_name);
+	      StrLastRem(buf3,"/");
+	      Free(buf2);
+	      buf2=MStrPrint("%s/%s",buf3,fbuf);
+	      Free(buf3);
+	    }
 	    Free(fbuf);
 	    if (!TEXT_MODE) //TODO Was 1  TODO RESTORE 
 	      LexAttachDoc(cc,,,buf2);
