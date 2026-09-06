@@ -1425,6 +1425,24 @@ found_end_square:
         break;start:
         if(!last_consumes_right)
 	  finish=TRUE;
+        case '\d':
+	  if(finish) break;
+	  if(cc->flags&CCF_ASM_EXPRESSIONS) {
+	    cc->abs_cnts.abs_addres++;
+	    if(cc->flags&CCF_AOT_COMPILE)
+	      RPNAddNew(cc,IC_ABS_ADDR,cc->aotc->rip,
+	        cmp.internal_types[RT_PTR]);
+	    else
+	      RPNAddNew(cc,IC_IMM_I64,cc->aotc->rip,
+	        cmp.internal_types[RT_PTR]);
+	  } else if(cc->flags&CCF_CLASS_DOL_OFFSET)
+	    RPNAddNew(cc,IC_IMM_I64,cc->class_dol_offset,
+	      cmp.internal_types[RT_I64]);
+	  else
+	    RPNAddNew(cc,IC_RIP,0,cmp.internal_types[RT_PTR]);
+	  last_consumes_right=0;
+	  Lex(cc);
+	  break;
         case TK_STR:
 	  if(finish) break;
 	  cc->flags|=CCF_HAS_MISC_DATA;

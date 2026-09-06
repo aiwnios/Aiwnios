@@ -2849,6 +2849,15 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     code_off += rpn->length;
     break;
 
+  case IC_CURRENT_PC:
+    into_reg = rpn->res.mode == MD_REG ? rpn->res.reg : 8;
+    AIWNIOS_ADD_CODE(ARM_adrX(MIR(cctrl, into_reg), 4));
+    tmp.mode = MD_REG;
+    tmp.raw_type = RT_I64i;
+    tmp.reg = into_reg;
+    code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+    break;
+
     break;
   case IC_LOCK:
     cctrl->is_lock_expr = 1;
@@ -4764,6 +4773,7 @@ static int64_t GetAddrModeParts(CCmpCtrl *cctrl, CRPN *r) {
 // Returns 1 if we hit the bottom
 static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   switch (r->type) {
+  case IC_CURRENT_PC:
   case __IC_STATIC_REF:
   case IC_STATIC:
   case IC_GLOBAL:

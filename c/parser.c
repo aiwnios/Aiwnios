@@ -218,6 +218,7 @@ CRPN *ICFwd(CRPN *rpn) {
   case IC_FS:
     goto unop;
   case IC_LOCK:
+  case IC_CURRENT_PC:
   case IC_RAW_BYTES:
   case __IC_STATICS_SIZE:
   case __IC_SET_STATIC_DATA:
@@ -4950,6 +4951,17 @@ CRPN *__HC_ICAdd_RawBytes(CCodeCtrl *cc, char *bytes, int64_t cnt) {
       .raw_bytes = A_CALLOC(cnt, cc->hc),
   };
   memcpy(rpn->raw_bytes, bytes, cnt);
+  QueIns(rpn, cc->ir_code);
+  return rpn;
+}
+
+CRPN *__HC_ICAdd_CurrentPC(CCodeCtrl *cc) {
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type = IC_CURRENT_PC,
+      .raw_type = RT_I64i,
+      .ic_class = HashFind("I64i", Fs->hash_table, HTT_CLASS, 1),
+  };
   QueIns(rpn, cc->ir_code);
   return rpn;
 }

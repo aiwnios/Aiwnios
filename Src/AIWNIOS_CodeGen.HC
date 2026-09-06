@@ -8,6 +8,7 @@ import U0 __HC_SetAOTRelocBeforeRIP(U8 *,I64); //See aiwn.h(TAKES number of byte
 import U8 *__HC_CmpCtrlDel(U8 *);
 import U8 *__HC_ICAdd_Sqr(U8 *);
 import U8 *__HC_ICAdd_RawBytes(U8*,U8*,I64);
+import U8 *__HC_ICAdd_CurrentPC(U8*);
 import U8 *__HC_ICAdd_GetVargsPtr(U8*);
 import U8 *__HC_ICAdd_ToF64(U8 *);
 import U8 *__HC_ICAdd_ToI64(U8 *);
@@ -118,6 +119,7 @@ extern U8 *__HC_ICAdd_Max_F64(U8 *);
 extern U8 *__HC_ICAdd_Min_F64(U8 *);
 extern U8 *__HC_ICAdd_GetVargsPtr(U8*);
 extern U8 *__HC_ICAdd_RawBytes(U8*,U8*,I64);
+extern U8 *__HC_ICAdd_CurrentPC(U8*);
 extern U0 __HC_CodeMiscInterateThroughRefs(U8 *,U0(*fptr)(U8*addr,U8*ud),U8*user_data);
 extern U8 * __HC_ICAdd_ToF64(U8 *);
 extern U8 * __HC_ICAdd_ToI64(U8 *);
@@ -1831,6 +1833,8 @@ break;case IC_GET_RSP:
   PrintErr("x86 register operation is unavailable for this target.\n");
   throw('Compiler');
 #endif
+break;case IC_RIP:
+  new=__HC_ICAdd_CurrentPC(cc2);
 //break;case IC_CALL_START: AIWNIOS DOESNT USE THESE
     //break;case IC_CALL_END:
     //break;case IC_CALL_END2:

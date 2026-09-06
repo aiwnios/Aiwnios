@@ -935,10 +935,11 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     len = AiwnBCAddCode(ptr, ABC_POS | (rpn->raw_type << 8), len);
     break;
   case IC_STR:
+  case IC_CURRENT_PC:
     len = AiwnBCAddCode(ptr, ABC_PCREL, len);
+    len = AiwnBCAddCode(ptr, rpn->type == IC_CURRENT_PC ? 12 : 0, len);
     len = AiwnBCAddCode(ptr, 0, len);
-    len = AiwnBCAddCode(ptr, 0, len);
-    if (ptr) {
+    if (ptr && rpn->type == IC_STR) {
       cmr = CodeMiscAddRefBC(rpn->code_misc, (void *)(ptr + len - 8));
       cmr->is_rel = 1;
       cmr->offset = 4;

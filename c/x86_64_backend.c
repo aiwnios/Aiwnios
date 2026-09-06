@@ -2818,6 +2818,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   case IC_IREG:
   case IC_FREG:
   case IC_BASE_PTR:
+  case IC_CURRENT_PC:
   case IC_STR:
   case IC_CHR:
   case IC_FS:
@@ -6331,12 +6332,26 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       [IC_COS] = &&ic_cos,
       [IC_TAN] = &&ic_tan,
       [IC_ATAN] = &&ic_atan,
+      [IC_CURRENT_PC] = &&ic_current_pc,
       [IC_RAW_BYTES] = &&ic_raw_bytes,
   };
   if (!poop_ants[rpn->type])
     goto ret;
   goto *poop_ants[rpn->type];
   do {
+  ic_current_pc:
+    if (rpn->res.mode == MD_REG)
+      into_reg = rpn->res.reg;
+    else
+      into_reg = AIWNIOS_TMP_IREG_POOP;
+    AIWNIOS_ADD_CODE(X86LeaSIB, MIR(cctrl, into_reg), -1, -1, RIP, 0);
+    if (rpn->res.mode != MD_REG) {
+      tmp.mode = MD_REG;
+      tmp.raw_type = RT_I64i;
+      tmp.reg = AIWNIOS_TMP_IREG_POOP;
+      code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+    }
+    break;
   ic_max_u64:
 #define IC_MXX_X64(OP)                                                         \
   {                                                                            \

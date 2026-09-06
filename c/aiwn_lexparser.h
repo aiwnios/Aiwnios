@@ -337,6 +337,7 @@ enum {
   IC_COS,
   IC_TAN,
   IC_ATAN,
+  IC_CURRENT_PC,
   IC_RAW_BYTES,
   IC_GET_VARGS_PTR, // Doing this sets the function as a VARGS function
   IC_LOCK, // Lock means "lock EXPRESSION;",it operates on expressions as a
@@ -634,6 +635,7 @@ CRPN *__HC_ICAdd_PreDec(CCodeCtrl *cc, int64_t amt);
 CRPN *__HC_ICAdd_PostDec(CCodeCtrl *cc, int64_t amt);
 CRPN *__HC_ICAdd_PostInc(CCodeCtrl *cc, int64_t amt);
 CRPN *__HC_ICAdd_RawBytes(CCodeCtrl *cc, char *bytes, int64_t cnt);
+CRPN *__HC_ICAdd_CurrentPC(CCodeCtrl *cc);
 void __HC_ICSetLock(CRPN *l);
 CRPN *__HC_ICAdd_RelocUnqiue(CCmpCtrl *, CCodeCtrl *, int64_t *, char *,
                              int64_t, int64_t);
