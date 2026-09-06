@@ -1838,7 +1838,6 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("VFsSetDrv", STK_VFsSetDrv, 1);
     PrsAddSymbol("VFsDriveMounted", STK_VFsDriveMounted, 1);
     PrsAddSymbol("FUnixTime", STK_VFsUnixTime, 1);
-    PrsAddSymbol("FSize", STK_VFsFSize, 1);
     PrsAddSymbol("VFsFTrunc", STK_VFsTrunc, 2);
     PrsAddSymbol("UnixNow", STK_UnixNow, 0);
     PrsAddSymbol("__GrPaletteColorSet", STK_GrPaletteColorSet, 2);
