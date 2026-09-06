@@ -3698,6 +3698,12 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       code_off = PutICArgIntoReg(cctrl, &next->res, RT_PTR, 1, bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &next->res, bin, code_off);
       break;
+    case IC_IREG:
+      code_off = __OptPassFinal(cctrl, next, bin, code_off);
+      tmp = next->res;
+      tmp.raw_type = RT_PTR;
+      code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+      break;
     case IC_BASE_PTR:
       if (rpn->res.mode == MD_REG)
         into_reg = rpn->res.reg;

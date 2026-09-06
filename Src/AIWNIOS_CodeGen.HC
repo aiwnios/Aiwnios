@@ -1817,6 +1817,20 @@ break;case IC_ASM:
   __HC_ICAdd_Label(cc2,__HC_CodeMiscLabelNew(acc,&cur->ic_data(CAiwniosAOTBlob*)->final_start_addr));
    new=__HC_ICAdd_RawBytes(cc2,cur->ic_data(CAiwniosAOTBlob*)->data,cur->ic_data(CAiwniosAOTBlob*)->len);
             
+#ifdef TARGET_X86
+break;case IC_GET_RAX:
+  new=__HC_ICAdd_IReg(cc2,REG_RAX,RT_I64,0);
+break;case IC_GET_RBP:
+  new=__HC_ICAdd_IReg(cc2,REG_RBP,RT_U8,1);
+break;case IC_GET_RSP:
+  new=__HC_ICAdd_IReg(cc2,REG_RSP,RT_U8,1);
+#else
+break;case IC_GET_RAX:
+break;case IC_GET_RBP:
+break;case IC_GET_RSP:
+  PrintErr("x86 register operation is unavailable for this target.\n");
+  throw('Compiler');
+#endif
 //break;case IC_CALL_START: AIWNIOS DOESNT USE THESE
     //break;case IC_CALL_END:
     //break;case IC_CALL_END2:
