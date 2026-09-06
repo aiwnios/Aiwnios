@@ -111,6 +111,20 @@ CX86AddrMode *PrsX86AddrMode(CCmpCtrl *cc) {
   mode->imm=0;
   mode->label=NULL;
 prefix:
+  if(cc->token==TK_IDENT&&cc->hash_entry&&
+        cc->hash_entry->type&HTT_CLASS&&
+        !StrCmp(cc->cur_str,cc->hash_entry->str)) {
+    lookahead=cc->cur_buf_ptr;
+    while(*lookahead&&*lookahead<=' ') lookahead++;
+    tmpc=cc->hash_entry;
+    if(!(tmpc->member_lst_and_root&&
+          (cc->flags&CCF_USE_LAST_U16&&cc->last_U16=='.'||*lookahead=='.'))) {
+      mode->operand_sz=tmpc->size;
+      Lex(cc);
+      if(cc->token!='[')
+        goto size_prefix_consumed;
+    }
+  }
   if(cc->token==TK_IDENT) {
     tmpc=HashFind(cc->cur_str,cmp.asm_hash,HTT_INTERNAL_TYPE);
     if(tmpc) {
@@ -119,8 +133,7 @@ prefix:
       goto size_prefix_consumed;
     }
   }
-  if(cc->token==TK_IDENT||cc->hash_entry&&
-        cc->hash_entry->type&HTT_INTERNAL_TYPE) {
+  if(cc->token==TK_IDENT) {
     lookahead=cc->cur_buf_ptr;
     while(*lookahead&&*lookahead<=' ') lookahead++;
     rg=HashFind(cc->cur_str,cmp.asm_hash,HTT_REG);
@@ -158,6 +171,7 @@ prefix:
       mode->operand_sz=tmpc->size;
       Lex(cc);
     }
+  }
 size_prefix_consumed:
     if(!rg&&cc->token==TK_IDENT)
       rg=HashFind(cc->cur_str,cmp.asm_hash,HTT_REG);
@@ -178,7 +192,6 @@ size_prefix_consumed:
       mode->type=X86MT_REG;
       goto ret;
     }
-  }
 indir:
   if(cc->token=='[') {
     Lex(cc);
@@ -1020,6 +1033,10 @@ rex|=0x40;
     to[len++]=0x66;
   }
 //Prefix group 4(Address size ovveride)
+  if (seg_size==16&&indir_mode ||
+        seg_size==64&&indir_mode&&indir_mode->short_addr==1)
+    to[len++]=0x67;
+
   if(rex&0x40) {
     to[len++]=rex;    
   }
@@ -1352,10 +1369,8 @@ enter:
   cc->flags|=CCF_CLASS_DOL_OFFSET;
   cc->class_dol_offset=len;
   if(cc->token==TK_IDENT) {
-    asm_entry=cc->hash_entry;
-    if(!asm_entry||!(asm_entry->type&(HTT_OPCODE|HTT_ASM_KEYWORD)))
-      asm_entry=HashFind(cc->cur_str,cmp.asm_hash,
-            HTT_OPCODE|HTT_ASM_KEYWORD);
+    asm_entry=HashFind(cc->cur_str,cmp.asm_hash,
+          HTT_OPCODE|HTT_ASM_KEYWORD);
     if(asm_entry) cc->hash_entry=asm_entry;
   }
   MemSetU64(modes,NULL,4);
