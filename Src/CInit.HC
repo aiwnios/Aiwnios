@@ -214,6 +214,14 @@ U0 CmpAddKw(CHashTable *t,U8 *str,I64 tok) {
   HashAdd(gen,t);
 }
 
+U0 CmpAddAsmKw(CHashTable *t,U8 *str,I64 tok) {
+  CHashGeneric *gen=CAlloc(sizeof CHashGeneric);
+  gen->str=StrNew(str);
+  gen->type=HTT_ASM_KEYWORD;
+  gen->user_data0=tok;
+  HashAdd(gen,t);
+}
+
 U0 CmpLoadDefines()
 {
   DefineLstLoad("ST_RAW_TYPES",
@@ -419,9 +427,16 @@ U0 CMiscInit() {
   CmpAddKw(cmp.asm_hash,"haserrcode",45);
   CmpAddKw(cmp.asm_hash,"argpop",46);
   CmpAddKw(cmp.asm_hash,"noargpop",47);
-  CmpAddKw(cmp.asm_hash,"DU8",48);
-  CmpAddKw(cmp.asm_hash,"DU16",49);
-  CmpAddKw(cmp.asm_hash,"DU32",50);
-  CmpAddKw(cmp.asm_hash,"DU64",51);
+  CmpAddAsmKw(cmp.asm_hash,"DU8",48);
+  CmpAddAsmKw(cmp.asm_hash,"DU16",49);
+  CmpAddAsmKw(cmp.asm_hash,"DU32",50);
+  CmpAddAsmKw(cmp.asm_hash,"DU64",51);
+  CmpAddAsmKw(cmp.asm_hash,"DUP",55);
+  CmpAddAsmKw(cmp.asm_hash,"USE16",52);
+  CmpAddAsmKw(cmp.asm_hash,"USE32",53);
+  CmpAddAsmKw(cmp.asm_hash,"USE64",54);
+  CmpAddAsmKw(cmp.asm_hash,"ALIGN",56);
+  CmpAddAsmKw(cmp.asm_hash,"IMPORT",27);
+  CmpAddAsmKw(cmp.asm_hash,"BINFILE",57);
   adam_task->hash_table->next=cmp.asm_hash;
 }

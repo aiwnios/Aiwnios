@@ -95,7 +95,10 @@ Bool PrsAsmImm(CCmpCtrl *cc,CX86AddrMode *arg)
 
 CX86AddrMode *PrsX86AddrMode(CCmpCtrl *cc) {
   CX86AddrMode *mode=CAlloc(sizeof CX86AddrMode);
-  CHashReg *rg;
+  CHashReg *rg=NULL;
+  CHashClass *tmpc=NULL;
+  CMemberLst *tmpm;
+  U8 *lookahead;
   I64 (*machine_code)(),cur_i64;
   mode->scale=-1;
   mode->type=-1;
@@ -107,14 +110,58 @@ CX86AddrMode *PrsX86AddrMode(CCmpCtrl *cc) {
   mode->seg=-1;
   mode->imm=0;
   mode->label=NULL;
+prefix:
   if(cc->token==TK_IDENT) {
-    if(cc->hash_entry&&cc->hash_entry->type&(HTT_CLASS|HTT_INTERNAL_TYPE)) {
-      mode->operand_sz=cc->hash_entry(CHashClass*)->size;
+    tmpc=HashFind(cc->cur_str,cmp.asm_hash,HTT_INTERNAL_TYPE);
+    if(tmpc) {
+      mode->operand_sz=tmpc->size;
       Lex(cc);
-      goto indir;
+      goto size_prefix_consumed;
     }
-    if(cc->hash_entry&&cc->hash_entry->type&HTT_REG) {
-      rg=cc->hash_entry;
+  }
+  if(cc->token==TK_IDENT||cc->hash_entry&&
+        cc->hash_entry->type&HTT_INTERNAL_TYPE) {
+    lookahead=cc->cur_buf_ptr;
+    while(*lookahead&&*lookahead<=' ') lookahead++;
+    rg=HashFind(cc->cur_str,cmp.asm_hash,HTT_REG);
+    tmpc=HashFind(cc->cur_str,cmp.asm_hash,HTT_INTERNAL_TYPE);
+    if(!tmpc&&cc->hash_entry&&cc->hash_entry->type&HTT_INTERNAL_TYPE)
+      tmpc=cc->hash_entry;
+    if(!rg&&!tmpc&&cc->hash_entry&&!StrCmp(cc->cur_str,cc->hash_entry->str)&&
+          cc->hash_entry->type&HTT_CLASS&&
+          cc->hash_entry(CHashClass*)->member_lst_and_root&&
+          (cc->flags&CCF_USE_LAST_U16&&cc->last_U16=='.'||*lookahead=='.')) {
+      tmpc=cc->hash_entry;
+      if(Lex(cc)!='.')
+        LexExcept(cc,"Expected a class member at");
+      mode->off=0;
+      do {
+        if(Lex(cc)!=TK_IDENT || !(tmpm=MemberFind(cc->cur_str,tmpc)))
+          LexExcept(cc,"Invalid class member at");
+        mode->off+=tmpm->offset;
+        tmpc=tmpm->member_class;
+      } while(Lex(cc)=='.');
+      if(cc->token=='+') {
+        Lex(cc);
+        cur_i64=mode->off;
+        mode->type=X86MT_IMM;
+        PrsAsmImm(cc,mode);
+        if(mode->local_asm_undef_hash||mode->glbl_asm_undef_hash)
+          LexExcept(cc,"Class member displacement must be resolved.");
+        mode->imm=cur_i64+mode->imm;
+      }
+      if(cc->token=='[')
+        goto indir;
+      mode->type=X86MT_IMM;
+      goto ret;
+    } else if(!rg&&tmpc) {
+      mode->operand_sz=tmpc->size;
+      Lex(cc);
+    }
+size_prefix_consumed:
+    if(!rg&&cc->token==TK_IDENT)
+      rg=HashFind(cc->cur_str,cmp.asm_hash,HTT_REG);
+    if(rg) {
       Lex(cc);
       if(cc->token==':') {
         Lex(cc);
@@ -123,7 +170,8 @@ CX86AddrMode *PrsX86AddrMode(CCmpCtrl *cc) {
 	  LexExcept(cc,"Expected a segment register at");
         }
         mode->seg=rg->reg_num;
-        goto indir;
+        rg=NULL;
+        goto prefix;
       }
       mode->r=rg->reg_num;
       mode->reg_type=rg->reg_type;
@@ -143,8 +191,8 @@ indir_loop:
       default:
         goto check_imm;
       case TK_IDENT:
-        if(cc->hash_entry&&cc->hash_entry->type&HTT_REG) {
-	  rg=cc->hash_entry;
+        rg=HashFind(cc->cur_str,cmp.asm_hash,HTT_REG);
+        if(rg) {
 	  Lex(cc);
 	  if(cc->token=='+') {
 	    Lex(cc);
@@ -323,19 +371,19 @@ r64:
     case X86_OPERAND_IMM8:
       if(mem_only) return FALSE;
       if(mode->type==X86MT_IMM)
-        if(I8_MIN<=mode->imm<=I8_MAX)
+        if(I8_MIN<=mode->imm<=U8_MAX)
 	  goto pass;
       return FALSE;
     case X86_OPERAND_IMM16:
       if(mem_only) return FALSE;
       if(mode->type==X86MT_IMM)
-        if(I16_MIN<=mode->imm<=I16_MAX)
+        if(I16_MIN<=mode->imm<=U16_MAX)
 	  goto pass;
       return FALSE;
     case X86_OPERAND_IMM32:
       if(mem_only) return FALSE;
       if(mode->type==X86MT_IMM)
-        if(I32_MIN<=mode->imm<=I32_MAX)
+        if(mode->imm>=I32_MIN&&mode->imm<=U32_MAX)
 	  goto pass;
       return FALSE;
     case X86_OPERAND_IMM64:
@@ -370,6 +418,12 @@ r64:
         if(mode->reg_type==REGT_R64
 	      &&mode->r==md.u8[1])
 	  goto pass;
+      return FALSE;
+    case X86_OPERAND_CONST_SREG:
+      if(mem_only) return FALSE;
+      if(mode->type==X86MT_REG)
+        if(mode->reg_type==REGT_SEG&&mode->r==md.u8[1])
+          goto pass;
       return FALSE;
     case X86_OPERAND_Rx:
 rx:
@@ -408,10 +462,10 @@ rx:
         switch(mem_sz) {
 	  case 8:
 	  case 4:
-	    if(I32_MIN<=mode->imm<=I32_MAX)
+	    if(I32_MIN<=mode->imm<=U32_MAX)
 	      goto pass;
 	  case 2:
-	    if(I16_MIN<=mode->imm<=I16_MAX)
+	    if(I16_MIN<=mode->imm<=U16_MAX)
 	      goto pass;
         } 
       }
@@ -474,10 +528,8 @@ fr:
 	  goto pass;
       return FALSE;
     case X86_OPERAND_REL8:
-/*
       if(mode->type==X86MT_IMM)
-        goto pass;
-*/
+	  goto pass;
       return FALSE;
     case X86_OPERAND_REL32:
       if(mode->type==X86MT_IMM)
@@ -713,12 +765,12 @@ fin:
   if(_disp_sz) *_disp_sz=disp_sz;
   return 1+(sib!=-1)+disp_sz;
 }
-I64 X86EncodeOpcode(I64 rip,CX86Opcode *opc,CX86AddrMode **modes,U8 *to,CQue *asm_patches) {
+I64 X86EncodeOpcode(I64 rip,I64 seg_size,CX86Opcode *opc,CX86AddrMode **modes,U8 *to,CQue *asm_patches) {
   U8 dummy[STR_LEN];
   I64 segment_override=-1;
   I64 i,ext=-1,a;
   I64 operand_sz=-1,len=0,sz,indir_mode_idx=-1;
-  I64 mask=1<<opc->arity-1;
+  I64 mask=(1<<opc->arity)-1;
   Bool is_x_sz=FALSE,wants_modrm_sib=FALSE;
   I64 rex=0,rel_sz=0; //Upper 4 bits will be 0x4 if needed
   if(!to) to=dummy;
@@ -731,7 +783,10 @@ I64 X86EncodeOpcode(I64 rip,CX86Opcode *opc,CX86AddrMode **modes,U8 *to,CQue *as
         rel_sz=1;
         break;
       case X86_OPERAND_REL32:
-        rel_sz=4;
+        if(seg_size==16)
+          rel_sz=2;
+        else
+          rel_sz=4;
         break;
     }
 //Check for MOFFx/8
@@ -748,7 +803,7 @@ I64 X86EncodeOpcode(I64 rip,CX86Opcode *opc,CX86AddrMode **modes,U8 *to,CQue *as
   for(a=0;a!=opc->arity;a++)
     if(modes[a]->type==X86MT_INDIR)
       if(-1!=modes[a]->seg) {
-        switch(modes[a]->r) {
+        switch(modes[a]->seg) {
 	  case 0: //ES
 	    segment_override=0x26;
 	    break;
@@ -764,7 +819,7 @@ I64 X86EncodeOpcode(I64 rip,CX86Opcode *opc,CX86AddrMode **modes,U8 *to,CQue *as
 	  case 4: //FS
 	    segment_override=0x64;
 	    break;
-	  case 6: //FS
+	  case 5: //GS
 	    segment_override=0x65;
 	    break;
 	  default:
@@ -800,7 +855,7 @@ I64 X86EncodeOpcode(I64 rip,CX86Opcode *opc,CX86AddrMode **modes,U8 *to,CQue *as
 	  for(a=0;a!=opc->arity;a++)
 	    if(modes[a]->type==X86MT_IMM&&operand_sz==-1)
 	      if(opc->operands[i].u8[0]==X86_OPERAND_IMMx) {
-	        if(I16_MIN<=modes[a]->imm<=I16_MAX&&!modes[a]->machine_code)
+	        if(I16_MIN<=modes[a]->imm<=U16_MAX&&!modes[a]->machine_code)
 		  operand_sz=2;
 	        else
 		  operand_sz=4;
@@ -810,7 +865,7 @@ I64 X86EncodeOpcode(I64 rip,CX86Opcode *opc,CX86AddrMode **modes,U8 *to,CQue *as
         is_x_sz=TRUE;
     }
   if(operand_sz==-1&&opc->operands[0].u8[0]) //Make sure our opcode takes arguments
-    operand_sz=8;
+    operand_sz=seg_size/8;
 
   if(X86_OPCF_MODRM&opc->flags) {
     for(a=0,i=0;i!=4;i++)
@@ -946,7 +1001,12 @@ rex|=0x40;
 }
 */
 
+  if(seg_size!=64)
+    rex=0;
+
   //Prefix group 2
+  if(opc->flags&X86_OPCF_REP)
+    to[len++]=0xf3;
   if(segment_override!=-1)
     to[len++]=segment_override;
 
@@ -954,7 +1014,9 @@ rex|=0x40;
     to[len++]=opc->pf;  
   }
 //Prefix group 3(Operand size prefix)
-  if(is_x_sz&&operand_sz==2) {
+  if(is_x_sz&&(seg_size==16&&operand_sz==4||seg_size!=16&&operand_sz==2)||
+        opc->flags&X86_OPCF_OPSIZE16&&seg_size!=16||
+        opc->flags&X86_OPCF_OPSIZE32&&seg_size==16) {
     to[len++]=0x66;
   }
 //Prefix group 4(Address size ovveride)
@@ -1252,7 +1314,10 @@ U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
   }
 }
 CAiwniosAOTBlob *PrsAsmBlk(CCmpCtrl *cc,I64 flags=0) {
-  Bool one_ins=FALSE;
+  I64 old_flags=cc->flags;
+  I64 old_class_dol_offset=cc->class_dol_offset;
+  CHashGeneric *asm_entry;
+  Bool one_ins=FALSE,has_zero_arity;
   if(flags&CMPF_ONE_ASM_INS) {
     one_ins=TRUE;
     goto enter0;
@@ -1273,8 +1338,8 @@ enter0:
   I64 scope=0;
   CX86Opcode *opc,*first_opc,*best;
   CQue *asm_patches=MAlloc(sizeof CQue),*to_fill=MAlloc(sizeof CQue);
-  I64 arg_cnt,best_sz,sz,len=0,tmp,idx;
-  U8 *buf=MAlloc(64),dummy[STR_LEN],*fbuf;
+  I64 arg_cnt,max_arity,best_sz,sz,len=0,tmp,idx,seg_size=64;
+  U8 *buf=MAlloc(64),dummy[STR_LEN],*fbuf,*lookahead;
   CCodeMisc *cm;
   CHashExport *exp;
   CHashImport *imp;
@@ -1284,17 +1349,43 @@ enter0:
   QueInit(asm_patches);
   QueInit(to_fill);
 enter:
+  cc->flags|=CCF_CLASS_DOL_OFFSET;
+  cc->class_dol_offset=len;
+  if(cc->token==TK_IDENT) {
+    asm_entry=cc->hash_entry;
+    if(!asm_entry||!(asm_entry->type&(HTT_OPCODE|HTT_ASM_KEYWORD)))
+      asm_entry=HashFind(cc->cur_str,cmp.asm_hash,
+            HTT_OPCODE|HTT_ASM_KEYWORD);
+    if(asm_entry) cc->hash_entry=asm_entry;
+  }
   MemSetU64(modes,NULL,4);
-  if(cc->hash_entry&&cc->hash_entry->type&HTT_OPCODE) {
+  if(cc->token==TK_IDENT&&cc->hash_entry&&cc->hash_entry->type&HTT_OPCODE) {
     first_opc=cc->hash_entry;
+    max_arity=0;
+    has_zero_arity=FALSE;
+    for(opc=first_opc;opc;opc=opc->next)
+      if(!StrCmp(first_opc->str,opc->str)) {
+        if(opc->arity>max_arity)
+          max_arity=opc->arity;
+        if(!opc->arity)
+          has_zero_arity=TRUE;
+      }
     Lex(cc);
-    for(arg_cnt=0;arg_cnt!=first_opc->arity;arg_cnt++) {
+    if(has_zero_arity) {
+      lookahead=cc->cur_buf_ptr;
+      while(*lookahead && *lookahead<=' ') lookahead++;
+      if(cc->token==';' || cc->token=='}' ||
+          cc->hash_entry &&
+          cc->hash_entry->type&(HTT_OPCODE|HTT_ASM_KEYWORD|HTT_KEYWORD) ||
+          cc->token==TK_IDENT &&
+          !HashFind(cc->cur_str,cmp.asm_hash,HTT_REG) &&
+          (cc->flags&CCF_USE_LAST_U16 && cc->last_U16==':' || *lookahead==':'))
+        max_arity=0;
+    }
+    for(arg_cnt=0;arg_cnt<max_arity;arg_cnt++) {
       if(arg_cnt) {
-        if(cc->token!=',') {
-	  LexExcept(cc,"Expected ',' at");
-	  Free(buf);
-	  throw('Asm');
-        }
+	if(cc->token!=',')
+	  break;
         Lex(cc);
       }
       modes[arg_cnt]=PrsX86AddrMode(cc);
@@ -1309,8 +1400,8 @@ enter:
     best=NULL,best_sz=I64_MAX;
     for(opc=first_opc;opc;opc=opc->next) {
       if(!StrCmp(first_opc->str,opc->str))
-       if(OpcodePassesModes(opc,modes)) {
-	  sz=X86EncodeOpcode(len,opc,modes,NULL,NULL);
+       if(opc->arity==arg_cnt && OpcodePassesModes(opc,modes)) {
+	  sz=X86EncodeOpcode(len,seg_size,opc,modes,NULL,NULL);
 	  if(sz<best_sz) {
 	    best_sz=sz;
 	    best=opc;
@@ -1322,10 +1413,19 @@ enter:
       Free(buf);
       throw('Asm');
     }
-    sz=X86EncodeOpcode(len,best,modes,dummy,asm_patches);
+    sz=X86EncodeOpcode(len,seg_size,best,modes,dummy,asm_patches);
     AddBytesToBuf(&buf,&len,sz,dummy);
   } else if(cc->token==TK_IDENT&&cc->hash_entry&&cc->hash_entry->type&(HTT_ASM_KEYWORD|HTT_KEYWORD)) {
-    if(!StrCmp(cc->hash_entry->str,"IMPORT")) {
+    if(!StrCmp(cc->hash_entry->str,"USE16")) {
+      seg_size=16;
+      Lex(cc);
+    } else if(!StrCmp(cc->hash_entry->str,"USE32")) {
+      seg_size=32;
+      Lex(cc);
+    } else if(!StrCmp(cc->hash_entry->str,"USE64")) {
+      seg_size=64;
+      Lex(cc);
+    } else if(!StrCmp(cc->hash_entry->str,"IMPORT")) {
 //TODO
     } else if(!StrCmp(cc->hash_entry->str,"BINFILE")) {
       if(Lex(cc)!=TK_STR)
@@ -1335,6 +1435,28 @@ enter:
       fbuf=FileRead(cc->cur_str,&sz);
       AddBytesToBuf(&buf,&len,sz,fbuf);
       Free(fbuf);
+    } else if(!StrCmp(cc->hash_entry->str,"ALIGN")) {
+      Lex(cc);
+      tmp_mode=CAlloc(sizeof CX86AddrMode);
+      tmp_mode->type=X86MT_IMM;
+      PrsAsmImm(cc,tmp_mode);
+      if(tmp_mode->local_asm_undef_hash||tmp_mode->glbl_asm_undef_hash||
+            tmp_mode->imm<=0||(tmp_mode->imm&(tmp_mode->imm-1)))
+        LexExcept(cc,"ALIGN must be a resolved power of two.");
+      arg_cnt=tmp_mode->imm;
+      X86AddrModeDel(tmp_mode);
+      if(cc->token!=',')
+        LexExcept(cc,"Expected ',' after ALIGN boundary.");
+      Lex(cc);
+      tmp_mode=CAlloc(sizeof CX86AddrMode);
+      tmp_mode->type=X86MT_IMM;
+      PrsAsmImm(cc,tmp_mode);
+      if(tmp_mode->local_asm_undef_hash||tmp_mode->glbl_asm_undef_hash)
+        LexExcept(cc,"ALIGN fill byte must be resolved.");
+      tmp=tmp_mode->imm;
+      X86AddrModeDel(tmp_mode);
+      while(len&(arg_cnt-1))
+        AddBytesToBuf(&buf,&len,1,&tmp);
     } else if(!StrCmp(cc->hash_entry->str,"DU8")) {
       sz=1;
 duxx:
@@ -1350,6 +1472,30 @@ duxx:
 	  tmp_mode=CAlloc(sizeof CX86AddrMode);
 	  tmp_mode->type=X86MT_IMM;
 	  PrsAsmImm(cc,tmp_mode);
+	  if(cc->token==TK_IDENT&&cc->hash_entry&&
+		!StrCmp(cc->hash_entry->str,"DUP")) {
+	    if(tmp_mode->local_asm_undef_hash||tmp_mode->glbl_asm_undef_hash)
+	      LexExcept(cc,"DUP count must be resolved.");
+	    arg_cnt=tmp_mode->imm;
+	    X86AddrModeDel(tmp_mode);
+	    if(arg_cnt<0)
+	      LexExcept(cc,"DUP count must not be negative.");
+	    if(Lex(cc)!='(')
+	      LexExcept(cc,"Expected a '('.");
+	    Lex(cc);
+	    tmp_mode=CAlloc(sizeof CX86AddrMode);
+	    tmp_mode->type=X86MT_IMM;
+	    PrsAsmImm(cc,tmp_mode);
+	    if(tmp_mode->local_asm_undef_hash||tmp_mode->glbl_asm_undef_hash)
+	      LexExcept(cc,"DUP value must be resolved.");
+	    if(cc->token!=')')
+	      LexExcept(cc,"Expected a ')'.");
+	    Lex(cc);
+	    for(idx=0;idx<arg_cnt;idx++)
+	      AddBytesToBuf(&buf,&len,sz,&tmp_mode->imm);
+	    X86AddrModeDel(tmp_mode);
+	    goto duxx_next;
+	  }
 	  patch=CAlloc(sizeof CAsmPatch);
 	  patch->imm=tmp_mode;
 	  patch->rip=len;
@@ -1357,7 +1503,8 @@ duxx:
 	  QueIns(patch,asm_patches);
 	  tmp=0;
 	  AddBytesToBuf(&buf,&len,sz,&tmp);
-        }
+	}
+duxx_next:
         if(cc->token==',') {
 	  Lex(cc);
         } else if(cc->token==';') {
@@ -1397,7 +1544,6 @@ duxx:
         default:
 	  LexExcept(cc,"Expected a ':'");
       end:;
-        Lex(cc);
         if(StrNCmp("@@",dummy,2)) {
 	  cc->asm_local_scope++;
         } else {
@@ -1406,6 +1552,7 @@ duxx:
 	  Free(tmp);
         }
         HashAdd(exp,cc->htc.glbl_hash_table);
+        Lex(cc);
     }
   } else if(cc->token==';') {
     Lex(cc);
@@ -1423,12 +1570,8 @@ duxx:
   if(!one_ins) {
     if(cc->token!='}')
       goto enter;
-    if(Lex(cc)!=';') {
+    if(Lex(cc)==';')
       Lex(cc);
-      QueDel(to_fill);
-      Free(buf);
-      LexExcept(cc,"Expected a ';'.");
-    }
   }
 fin:
   ret_blob=CAlloc(sizeof CAiwniosAOTBlob);
@@ -1438,6 +1581,8 @@ fin:
   Free(asm_patches);
   ret_blob->len=len;  
   ret_blob->data=buf;
+  cc->flags=old_flags;
+  cc->class_dol_offset=old_class_dol_offset;
   return ret_blob;
 }
 U8 *AsmTest() {
