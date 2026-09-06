@@ -2537,6 +2537,10 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
   CMemberLst *lst;
   CICArg fun_arg = {0}, write_to = {0};
   CRPN *rpn, *arg;
+  if (cctrl->flags & CCF_INTERRUPT) {
+    fprintf(stderr, "interrupt functions are unsupported on AArch64\n");
+    abort();
+  }
   /* Old SP
    * saved regs
    * wiggle room

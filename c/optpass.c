@@ -33,9 +33,12 @@ static void FixFunArgs(CCmpCtrl *cctrl, CRPN *rpn) {
   CHashFun *ic_fun;
   CMemberLst *arg, *args_lst_rev;
   for (cnt = 0; cnt != rpn->length; cnt++)
-    rpn2 = ICFwd(rpn2);
+    if (!(rpn2 = ICFwd(rpn2)))
+      return;
   AssignRawTypeToNode(cctrl, rpn2);
   ic_fun = rpn2->ic_fun;
+  if (!ic_fun)
+    return;
   rpn2 = rpn->base.next;
   arg = ic_fun->base.members_lst;
   cnt2 = ic_fun->argc;

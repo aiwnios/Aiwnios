@@ -387,6 +387,16 @@ int64_t X86Ret(char *to, int64_t ul) {
   return len;
 }
 
+static int64_t X86Iretq(char *to, int64_t unused) {
+  int64_t len = 0;
+  char buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0x48);
+  ADD_U8(0xcf);
+  return len;
+}
+
 int64_t X86MovImm(char *to, int64_t a, int64_t off) {
   int64_t len = 0;
   char buf[16];
@@ -5293,6 +5303,15 @@ static int64_t __FindPushedIRegs(CCmpCtrl *cctrl, char *to_push) {
   int64_t cnt = 0;
   int64_t idx = 0;
   memset(to_push, 0, 16);
+  if (cctrl->flags & CCF_INTERRUPT) {
+    for (idx = 0; idx != 16; idx++) {
+      if (idx != RSP && idx != RBP) {
+        to_push[idx] = 1;
+        cnt++;
+      }
+    }
+    return cnt;
+  }
   if (!cctrl->cur_fun) {
     if (!cctrl->found_used_iregs) {
       // Perhaps we are being called from HolyC and we aren't using a "cur_fun"
@@ -5697,6 +5716,7 @@ static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
     arg_cnt = cctrl->cur_fun->argc;
     is_vargs = !!(cctrl->cur_fun->base.flags & CLSF_VARGS);
   } else {
+    is_vargs = !!(cctrl->flags & CCF_VARGS);
     fsz = 16;
     for (rpn = cctrl->code_ctrl->ir_code->next;
          rpn != cctrl->code_ctrl->ir_code; rpn = rpn->base.next) {
@@ -5743,7 +5763,11 @@ static int64_t FuncEpilog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
 
   off = -old_regs_start;
   AIWNIOS_ADD_CODE(X86Leave, 0);
-  if (is_vargs) {
+  if (cctrl->flags & CCF_INTERRUPT) {
+    if (cctrl->flags & CCF_INTERRUPT_ERROR_CODE)
+      AIWNIOS_ADD_CODE(X86AddImm32, RSP, 8);
+    AIWNIOS_ADD_CODE(X86Iretq, 0);
+  } else if (is_vargs) {
     AIWNIOS_ADD_CODE(X86Ret, 0);
   } else {
     AIWNIOS_ADD_CODE(X86Ret, 8 * arg_cnt);
@@ -6387,13 +6411,20 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       abort();
     }
   segment:
-    // %gs is used as a TLS reg for all OS'es
     into_reg = 0;
+    if (cctrl->flags & CCF_NATIVE_SEGMENTS) {
+      if (rpn->type == IC_FS) {
+        AIWNIOS_ADD_CODE(SEG_FS, 0);
+      } else {
+        AIWNIOS_ADD_CODE(SEG_GS, 0);
+      }
+    } else {
 #if __OpenBSD__ + __NetBSD__ > 0
-    AIWNIOS_ADD_CODE(SEG_FS, 0);
+      AIWNIOS_ADD_CODE(SEG_FS, 0);
 #else
-    AIWNIOS_ADD_CODE(SEG_GS, 0);
+      AIWNIOS_ADD_CODE(SEG_GS, 0);
 #endif
+    }
     if (rpn->res.mode == MD_REG && next->type == IC_I64 &&
         Is32Bit(next->integer)) {
       into_reg = rpn->res.reg;

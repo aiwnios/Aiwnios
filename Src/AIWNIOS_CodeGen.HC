@@ -5,6 +5,9 @@
 //
 #ifdef IMPORT_AIWNIOS_SYMS
 import U0 __HC_CmpCtrl_SetRawAOTAsm(U8 *);
+import U0 __HC_CmpCtrl_UseNativeSegments(U8 *);
+import U0 __HC_CmpCtrl_SetVargs(U8 *);
+import U0 __HC_CmpCtrl_SetInterrupt(U8 *,Bool);
 import U0 __HC_SetAOTRelocBeforeRIP(U8 *,I64); //See aiwn.h(TAKES number of bytes before current RIP the symbol is located at)
 import U8 *__HC_CmpCtrlDel(U8 *);
 import U8 *__HC_ICAdd_Sqr(U8 *);
@@ -87,6 +90,7 @@ import U8 *__HC_Compile(U8*,I64 *sz=NULL,U8 **dbg_info=NULL,CHeapCtrl *);
 import U8 *__HC_CodeMiscStrNew(U8 *,U8*,I64);
 import U8 *__HC_CodeMiscJmpTableNew(U8*,U8**,I64,I64);
 import U8 *__HC_ICAdd_Label(U8*,U8*);
+import U8 *__HC_ICAdd_LabelAddr(U8*,U8*);
 import U8 *__HC_ICAdd_Goto(U8*,U8*);
 import U8 *__HC_ICAdd_GotoIf(U8*,U8*)
 import U8 *__HC_ICAdd_Str(U8*,U8*); //Takes a AIWNIOS code misc
@@ -174,6 +178,8 @@ extern U8 * __HC_ICAdd_AndEq(U8*);
 extern U8 * __HC_ICAdd_OrEq(U8*);
 extern U8 * __HC_ICAdd_XorEq(U8*);
 extern U8 * __HC_ICAdd_ModEq(U8*);
+extern U0 __HC_CmpCtrl_SetInterrupt(U8 *,Bool);
+extern U0 __HC_CmpCtrl_SetVargs(U8 *);
 extern U8 * __HC_ICAdd_FReg(U8*,I64);
 extern U8 * __HC_ICAdd_Ds(U8 *,I64);
 extern U8 * __HC_ICAdd_IReg(U8*,I64 r,I64 rt,I64 ptrs);
@@ -189,6 +195,7 @@ extern U8 *__HC_CodeMiscLabelNew(U8 *,U8 **patch_addr=NULL);
 extern U8 *__HC_CodeMiscStrNew(U8 *,U8*,I64);
 extern U8 *__HC_CodeMiscJmpTableNew(U8*,U8**,I64,I64);
 extern U8 *__HC_ICAdd_Label(U8*,U8*);
+extern U8 *__HC_ICAdd_LabelAddr(U8*,U8*);
 extern U8 *__HC_ICAdd_Goto(U8*,U8*);
 extern U8 *__HC_ICAdd_GotoIf(U8*,U8*)
 extern U8 *__HC_ICAdd_Str(U8*,U8*); //Takes a AIWNIOS code misc
@@ -1354,6 +1361,8 @@ U8 *AiwniosCompile(CCmpCtrl *cc,I64 *res_sz=NULL,CDbgInfo **info,Bool byte_code=
   Bool force_segment=FALSE;
   I64 statics_sz=0;
   static I64 static_cnt=0;
+  if (cc->htc.fun && cc->htc.fun->flags&FSF_INTERRUPT)
+    __HC_CmpCtrl_SetInterrupt(acc,cc->htc.fun->flags&FSF_HASERRCODE);
   stat_nam=MStrPrint(".STATIC_%d",static_cnt++);
 //Turn all IC_IMM_I64s that are used as F64's to IC_IMM_I64
   for(cur=head->next;cur!=head;cur=cur->next) {
@@ -1421,6 +1430,12 @@ skip_convert:;
   #endif
   if(cc->flags&CCF_AOT_COMPILE)
     __HC_CmpCtrl_SetAOT(acc);
+  if (cc->flags&CCF_AOT_COMPILE &&
+      (Bt(&cc->opts,OPTf_RAW_AOT) ||
+       Bt(&cc->opts,OPTf_TEMPLEOS)))
+    __HC_CmpCtrl_UseNativeSegments(acc);
+  if (cc->htc.fun && Bt(&cc->htc.fun->flags,Ff_DOT_DOT_DOT))
+    __HC_CmpCtrl_SetVargs(acc);
   if(cc->flags&CCF_RAW_AOT_ASM)
     __HC_CmpCtrl_SetRawAOTAsm(acc);
   if(info) {
@@ -1509,7 +1524,9 @@ skip_convert:;
         if(foff&(align-1))
           foff+=align-(foff&(align-1)); //Align to 8
         #else 
-	if(IsFunArg(cc->htc.fun,mlst)&&!(mlst->flags&MLF_DOT_DOT_DOT&&!StrCmp(mlst->str,"argv"))) {
+	if(IsFunArg(cc->htc.fun,mlst) &&
+              (!(mlst->flags&MLF_DOT_DOT_DOT&&!StrCmp(mlst->str,"argv")) ||
+               Bt(&cc->opts,OPTf_TEMPLEOS))) {
 	  //Arguments are passed on stack so no need to mode
 	  foff_lookup[idx].i32[0]=mlst->offset;
 	  //16 to offset [PC,RBP] pair at base 
@@ -1588,7 +1605,8 @@ found_offset:;;
 #ifdef TARGET_X86
 //Not yet implemented for AARCH64
       if(mlst->flags&MLF_DOT_DOT_DOT&&!StrCmp(mlst->str,"argv")) {
-        __HC_ICAdd_GetVargsPtr(cc2);
+        if (!Bt(&cc->opts,OPTf_TEMPLEOS))
+          __HC_ICAdd_GetVargsPtr(cc2);
       } else
         __HC_ICAdd_Arg(cc2,idx);
 #endif
@@ -1725,8 +1743,13 @@ found_offset:;;
     #endif
     if(force_segment) {
       //Bypass import and use raw one on X86,they are predictable
-      misc->h=HashFind("__Fs",Fs->hash_table,HTT_FUN);
-      new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);      
+      if(Bt(&cc->opts,OPTf_RAW_AOT) ||
+            Bt(&cc->opts,OPTf_TEMPLEOS))
+        new=__HC_ICAdd_I64(cc2,0);
+      else {
+        misc->h=HashFind("__Fs",Fs->hash_table,HTT_FUN);
+        new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);
+      }
     } else if(!(misc->h->type&HTF_IMPORT)) {
       new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);
     } else
@@ -1759,8 +1782,13 @@ found_offset:;;
     #endif
     if(force_segment) {
       //Bypass import and use raw one on X86,they are predictable
-      misc->h=HashFind("__Gs",Fs->hash_table,HTT_FUN);
-      new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);      
+      if(Bt(&cc->opts,OPTf_RAW_AOT) ||
+            Bt(&cc->opts,OPTf_TEMPLEOS))
+        new=__HC_ICAdd_I64(cc2,0);
+      else {
+        misc->h=HashFind("__Gs",Fs->hash_table,HTT_FUN);
+        new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);
+      }
     } else if(!(misc->h->type&HTF_IMPORT)) {
       new=__HC_ICAdd_I64(cc2,misc->h(CHashFun*)->exe_addr);
     } else
@@ -1831,6 +1859,11 @@ found_offset:;;
     break;case IC_NOP2:
     break;case IC_LABEL:
       new=__HC_ICAdd_Label(cc2,cur->ic_data(CCodeMisc*)->addr);
+    break;case IC_GET_LABEL:
+      misc=cur->ic_data;
+      if (!misc->addr)
+        misc->addr=__HC_CodeMiscLabelNew(acc,&misc->addr2);
+      new=__HC_ICAdd_LabelAddr(cc2,misc->addr);
 break;case IC_ASM:
   __HC_ICAdd_Label(cc2,__HC_CodeMiscLabelNew(acc,&cur->ic_data(CAiwniosAOTBlob*)->final_start_addr));
    new=__HC_ICAdd_RawBytes(cc2,cur->ic_data(CAiwniosAOTBlob*)->data,cur->ic_data(CAiwniosAOTBlob*)->len);
@@ -2077,7 +2110,10 @@ break;case IC_RIP:
     break;case IC_SUB_EQU:
     new=__HC_ICAdd_SubEq(cc2);
     break;case IC_JMP:
-    new=__HC_ICAdd_Goto(cc2,cur->ic_data(CCodeMisc*)->addr);
+    misc=cur->ic_data;
+    if (!misc->addr)
+      misc->addr=__HC_CodeMiscLabelNew(acc,&misc->addr2);
+    new=__HC_ICAdd_Goto(cc2,misc->addr);
     break;case IC_SUB_RET:
     new=__HC_ICAdd_SubRet(cc2);
     break;case IC_SUB_CALL:

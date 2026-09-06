@@ -103,10 +103,10 @@ CHashFun *PrsFunJoin(CCmpCtrl *cc,CHashClass *tmp_return,
     else
       tmpf->exe_addr=&UndefinedExtern;
     LBts(&tmpf->flags,Cf_EXTERN);
-    tmpf->flags|=fsp_flags&FSG_FUN_FLAGS1;
     if (name) //if not fun_ptr
       HashAdd(tmpf,cc->htc.glbl_hash_table);
   }
+  tmpf->flags|=fsp_flags&FSG_FUN_FLAGS1;
   if(fsp_flags&FSF_PUBLIC)
     LBts(&tmpf->type,HTf_PUBLIC);
   else
@@ -953,22 +953,54 @@ U0 PrsTryBlk(CCmpCtrl *cc,I64 try_cnt)
   CHashClass	*tmpc=cmp.internal_types[RT_PTR];
   CHashFun	*tmp_try=HashFind("SysTry",cc->htc.hash_table_lst,HTT_FUN),
 	*tmp_untry=HashFind("SysUntry",cc->htc.hash_table_lst,HTT_FUN),
-  *tmp_a_ent=HashFind("AIWNIOS_SetJmp",cc->htc.hash_table_lst,HTT_FUN),
-  *tmp_end_catch=HashFind("EndCatch",cc->htc.hash_table_lst,HTT_FUN);
+  *tmp_a_ent,*tmp_end_catch;
 
-  if (!tmp_try || !tmp_untry || !tmp_a_ent)
-    LexExcept(cc,"Missing header for SysTry(),EndCatch(),AIWNIOS_SetJmp() and SysUntry() at ");
+  if (!tmp_try || !tmp_untry)
+    LexExcept(cc,"Missing header for SysTry() and SysUntry() at ");
 
   tmp_try=CodeMiscHashNew(cc,tmp_try);
   tmp_untry=CodeMiscHashNew(cc,tmp_untry);
-  tmp_a_ent=CodeMiscHashNew(cc,tmp_a_ent);
-  tmp_end_catch=CodeMiscHashNew(cc,tmp_end_catch);
   
   cc->flags|=CCF_NO_REG_OPT; //TODO:Currently no reg vars in funs with try/catch
 
   lb_catch=COCMiscNew(cc,CMT_LABEL);
   lb_done =COCMiscNew(cc,CMT_LABEL);
   lb_untry=COCMiscNew(cc,CMT_LABEL);
+
+  if (cc->flags&CCF_AOT_COMPILE &&
+      (Bt(&cc->opts,OPTf_RAW_AOT) ||
+       Bt(&cc->opts,OPTf_TEMPLEOS))) {
+    RPNAddNew(cc,IC_ADDR_IMPORT,tmp_try,tmpc,FALSE);
+    RPNAddNew(cc,IC_GET_LABEL,lb_catch,tmpc,FALSE);
+    RPNAddNew(cc,IC_GET_LABEL,lb_untry,tmpc,FALSE);
+    RPNAddNew(cc,IC_CALL_INDIRECT,3,tmpc,FALSE);
+
+    PrsStmt(cc,try_cnt+1);
+
+    RPNAddNew(cc,IC_LABEL,lb_untry,0,FALSE);
+    RPNAddNew(cc,IC_ADDR_IMPORT,tmp_untry,tmpc,FALSE);
+    RPNAddNew(cc,IC_CALL_INDIRECT,1,tmpc,FALSE);
+    RPNAddNew(cc,IC_JMP,lb_done,0,FALSE);
+
+    if (PrsKeyWord(cc)!=KW_CATCH)
+      LexExcept(cc,"Missing 'catch' at");
+
+    Lex(cc);
+    RPNAddNew(cc,IC_LABEL,lb_catch,0,FALSE);
+    PrsStmt(cc,try_cnt+1);
+    RPNAddNew(cc,IC_IMM_I64,0,cmp.internal_types[RT_I64],FALSE);
+    RPNAddNew(cc,IC_RET,0,tmpc,FALSE);
+    RPNAddNew(cc,IC_LABEL,lb_done,0,FALSE);
+    return;
+  }
+
+  tmp_a_ent=HashFind("AIWNIOS_SetJmp",cc->htc.hash_table_lst,HTT_FUN);
+  tmp_end_catch=HashFind("EndCatch",cc->htc.hash_table_lst,HTT_FUN);
+  if (!tmp_a_ent || !tmp_end_catch)
+    LexExcept(cc,"Missing header for AIWNIOS_SetJmp() and EndCatch() at ");
+
+  tmp_a_ent=CodeMiscHashNew(cc,tmp_a_ent);
+  tmp_end_catch=CodeMiscHashNew(cc,tmp_end_catch);
 
   //Changed by nroot
   RPNAddNew(cc,IC_ADDR_IMPORT,tmp_a_ent,tmpc,FALSE);

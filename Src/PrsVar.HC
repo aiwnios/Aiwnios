@@ -404,13 +404,22 @@ U0 PrsDotDotDot(CCmpCtrl *cc,CHashFun *tmpf,I64 _reg)
 
   tmpm=MemberLstNew(_reg);
   tmpm->flags=MLF_DOT_DOT_DOT;
-  tmpm->member_class=cmp.internal_types[RT_I64]; //Changed by nroot,argv is a pointer,not an array
-  tmpm->member_class++;
+  if (Bt(&cc->opts,OPTf_TEMPLEOS)) {
+    tmpm->member_class=cmp.internal_types[RT_I64];
+    tmpm->dim.total_cnt=127; //arbitrary
+    tmpm->dim.next=MAlloc(sizeof(CArrayDim));
+    tmpm->dim.next->next=NULL;
+    tmpm->dim.next->cnt=127;
+    tmpm->dim.next->total_cnt=1;
+  } else {
+    tmpm->member_class=cmp.internal_types[RT_I64];
+    tmpm->member_class++;
+    tmpm->dim.total_cnt=1;
+  }
   tmpm->str=StrNew("argv");
   tmpm->offset=tmpf->size;
-  tmpm->size=1; //Close enough(1 count of an I8* ???)
-  tmpf->size+=8;//Close enough
-  tmpm->dim.total_cnt=1; //Added by nroot
+  tmpm->size=8;
+  tmpf->size+=8;
   MemberAdd(cc,tmpm,tmpf,PRS1B_FUN_ARG);
 
   if (cc->token==')')

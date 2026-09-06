@@ -186,6 +186,10 @@ typedef struct CCmpCtrl {
 #define CCF_AOT_COMPILE              0x4
 #define CCF_ICMOV_NO_USE_RAX         0x8
 #define CCF_RAW_AOT_ASM              0x10
+#define CCF_NATIVE_SEGMENTS          0x20
+#define CCF_INTERRUPT                0x40
+#define CCF_INTERRUPT_ERROR_CODE     0x80
+#define CCF_VARGS                    0x100
   int64_t flags;
   CHashFun *cur_fun;
   CCodeCtrl *code_ctrl;
@@ -728,6 +732,7 @@ char *__HC_Compile(CCmpCtrl *ccmp, int64_t *sz, char **dbg_info,
                    struct CHeapCtrl *heap);
 CRPN *__HC_ICAdd_Goto(CCodeCtrl *cc, CCodeMisc *cm);
 CRPN *__HC_ICAdd_GotoIf(CCodeCtrl *cc, CCodeMisc *cm);
+CRPN *__HC_ICAdd_LabelAddr(CCodeCtrl *cc, CCodeMisc *misc);
 CRPN *__HC_ICAdd_Str(CCodeCtrl *cc, CCodeMisc *cm);
 CRPN *__HC_ICAdd_Label(CCodeCtrl *cc, CCodeMisc *misc);
 CRPN *__HC_ICAdd_Arg(CCodeCtrl *cc, int64_t arg);
@@ -766,6 +771,9 @@ extern void PrsBindCSymbolNaked(char *name, void *ptr, int64_t arity);
 extern void PrsBindCSymbol(char *name, void *ptr, int64_t arity);
 void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc);
 void __HC_CmpCtrl_SetRawAOTAsm(CCmpCtrl *cc);
+void __HC_CmpCtrl_UseNativeSegments(CCmpCtrl *cc);
+void __HC_CmpCtrl_SetVargs(CCmpCtrl *cc);
+void __HC_CmpCtrl_SetInterrupt(CCmpCtrl *cc, int64_t has_error_code);
 
 CRPN *__HC_ICAdd_GetVargsPtr(CCodeCtrl *cc);
 

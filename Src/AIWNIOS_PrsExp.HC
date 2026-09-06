@@ -86,8 +86,7 @@ CHashClass *AssignRawTypeToNode(CRPN *r) {
     return r->ic_class=cmp.internal_types[RT_I64];
     break;case IC_TYPE:
     goto unimp;
-    break;case IC_GET_LABEL:
-    goto unimp;
+    break;case IC_GET_LABEL: return r->ic_class;
     break;case IC_REG:
     goto unimp;
     break;case IC_TO_I64: return r->ic_class=cmp.internal_types[RT_I64];

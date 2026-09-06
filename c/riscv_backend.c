@@ -2364,6 +2364,10 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
   CMemberLst *lst;
   CICArg fun_arg = {0}, write_to = {0}, stack = {0}, tmp = {0};
   CRPN *rpn, *arg;
+  if (cctrl->flags & CCF_INTERRUPT) {
+    fprintf(stderr, "interrupt functions are unsupported on RISC-V\n");
+    abort();
+  }
   if (cctrl->cur_fun) {
     fsz = cctrl->cur_fun->base.sz + 16; //+16 for RBP/return address
     arg_cnt = cctrl->cur_fun->argc;

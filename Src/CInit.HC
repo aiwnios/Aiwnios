@@ -426,7 +426,7 @@ U0 CMiscInit() {
   CmpAddKw(cmp.asm_hash,"static",41);
   CmpAddKw(cmp.asm_hash,"lock",42);
   CmpAddKw(cmp.asm_hash,"defined",43);
-  CmpAddKw(cmp.asm_hash,"interupt",44);
+  CmpAddKw(cmp.asm_hash,"interrupt",44);
   CmpAddKw(cmp.asm_hash,"haserrcode",45);
   CmpAddKw(cmp.asm_hash,"argpop",46);
   CmpAddKw(cmp.asm_hash,"noargpop",47);

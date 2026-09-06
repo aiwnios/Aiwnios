@@ -923,6 +923,21 @@ static int64_t STK___HC_CmpCtrl_SetRawAOTAsm(int64_t *stk) {
   return 0;
 }
 
+static int64_t STK___HC_CmpCtrl_UseNativeSegments(int64_t *stk) {
+  __HC_CmpCtrl_UseNativeSegments((CCmpCtrl *)stk[0]);
+  return 0;
+}
+
+static int64_t STK___HC_CmpCtrl_SetVargs(int64_t *stk) {
+  __HC_CmpCtrl_SetVargs((CCmpCtrl *)stk[0]);
+  return 0;
+}
+
+static int64_t STK___HC_CmpCtrl_SetInterrupt(int64_t *stk) {
+  __HC_CmpCtrl_SetInterrupt((CCmpCtrl *)stk[0], stk[1]);
+  return 0;
+}
+
 static int64_t STK__HC_ICAdd_RawBytes(int64_t *stk) {
   return (int64_t)__HC_ICAdd_RawBytes((CCmpCtrl *)stk[0], (char *)stk[1],
                                       stk[2]);
@@ -1155,6 +1170,9 @@ static int64_t STK___HC_CodeMiscStrNew(int64_t *stk) {
 }
 static int64_t STK___HC_CodeMiscLabelNew(int64_t *stk) {
   return (int64_t)__HC_CodeMiscLabelNew((CCmpCtrl *)stk[0], (void **)stk[1]);
+}
+static int64_t STK___HC_ICAdd_LabelAddr(int64_t *stk) {
+  return (int64_t)__HC_ICAdd_LabelAddr((CCodeCtrl *)stk[0], (CCodeMisc *)stk[1]);
 }
 static int64_t STK___HC_CmpCtrlNew(int64_t *stk) {
   return (int64_t)__HC_CmpCtrlNew();
@@ -1735,6 +1753,11 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("IsValidPtr", STK_IsValidPtr, 1);
     PrsAddSymbol("__HC_CmpCtrl_SetAOT", STK___HC_CmpCtrl_SetAOT, 1);
     PrsAddSymbol("__HC_CmpCtrl_SetRawAOTAsm", STK___HC_CmpCtrl_SetRawAOTAsm, 1);
+    PrsAddSymbol("__HC_CmpCtrl_UseNativeSegments",
+                 STK___HC_CmpCtrl_UseNativeSegments, 1);
+    PrsAddSymbol("__HC_CmpCtrl_SetVargs", STK___HC_CmpCtrl_SetVargs, 1);
+    PrsAddSymbol("__HC_CmpCtrl_SetInterrupt", STK___HC_CmpCtrl_SetInterrupt,
+                 2);
     PrsAddSymbol("__HC_ICAdd_Typecast", STK___HC_ICAdd_Typecast, 3);
     PrsAddSymbol("__HC_ICAdd_SubCall", STK___HC_ICAdd_SubCall, 2);
     PrsAddSymbol("__HC_ICAdd_SubProlog", STK___HC_ICAdd_SubProlog, 1);
@@ -1796,6 +1819,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("__HC_CodeMiscStrNew", STK___HC_CodeMiscStrNew, 3);
     PrsAddSymbol("__HC_CodeMiscJmpTableNew", STK___HC_CodeMiscJmpTableNew, 4);
     PrsAddSymbol("__HC_ICAdd_Label", STK___HC_ICAdd_Label, 2);
+    PrsAddSymbol("__HC_ICAdd_LabelAddr", STK___HC_ICAdd_LabelAddr, 2);
     PrsAddSymbol("__HC_ICAdd_Goto", STK___HC_ICAdd_Goto, 2);
     PrsAddSymbol("__HC_ICAdd_GotoIf", STK___HC_ICAdd_GotoIf, 2);
     PrsAddSymbol("__HC_ICAdd_Str", STK___HC_ICAdd_Str, 2);

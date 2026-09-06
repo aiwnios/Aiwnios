@@ -4923,6 +4923,18 @@ CRPN *__HC_ICAdd_Label(CCodeCtrl *cc, CCodeMisc *misc) {
   return rpn;
 }
 
+CRPN *__HC_ICAdd_LabelAddr(CCodeCtrl *cc, CCodeMisc *misc) {
+  CRPN *rpn;
+  *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
+      .type = IC_SHORT_ADDR,
+      .code_misc = misc,
+  };
+  rpn->ic_class = HashFind("U8i", Fs->hash_table, HTT_CLASS, 1) + 1;
+  rpn->raw_type = RT_PTR;
+  QueIns(rpn, cc->ir_code);
+  return rpn;
+}
+
 CRPN *__HC_ICAdd_Goto(CCodeCtrl *cc, CCodeMisc *cm) {
   CRPN *rpn;
   *(rpn = A_CALLOC(sizeof(CRPN), cc->hc)) = (CRPN){
@@ -5085,6 +5097,20 @@ void __HC_CmpCtrl_SetAOT(CCmpCtrl *cc) {
 
 void __HC_CmpCtrl_SetRawAOTAsm(CCmpCtrl *cc) {
   cc->flags |= CCF_RAW_AOT_ASM;
+}
+
+void __HC_CmpCtrl_UseNativeSegments(CCmpCtrl *cc) {
+  cc->flags |= CCF_NATIVE_SEGMENTS;
+}
+
+void __HC_CmpCtrl_SetVargs(CCmpCtrl *cc) {
+  cc->flags |= CCF_VARGS;
+}
+
+void __HC_CmpCtrl_SetInterrupt(CCmpCtrl *cc, int64_t has_error_code) {
+  cc->flags |= CCF_INTERRUPT;
+  if (has_error_code)
+    cc->flags |= CCF_INTERRUPT_ERROR_CODE;
 }
 HC_IC_BINDING(HC_ICAdd_ToBool, IC_TO_BOOL);
 HC_IC_BINDING(HC_ICAdd_BT, IC_BT);
