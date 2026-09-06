@@ -68,7 +68,7 @@ U0 RedSeaISO9660(U8 *iso_filename,U8 drv_let)
   CFile *out_file=NULL;
 
   if (out_file=iso_filename) {
-    iso_size=FSize(out_file)/DVD_BLK_SIZE;
+    iso_size=(dv->bd->max_blk+1)/(DVD_BLK_SIZE/BLK_SIZE);
     for (i=0;i<dv->bd->drv_offset;i+=4)
       FBlkWrite(out_file,zero_buf,i,4);
 
