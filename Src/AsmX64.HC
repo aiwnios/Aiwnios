@@ -644,7 +644,8 @@ Bool OpcodePassesModes(CX86Opcode *opc,CX86AddrMode **modes) {
   for(mem_sz=2;mem_sz<=8;mem_sz*=2) {
     a=0;
     for(idx=0;opc->operands[idx].u8[0];idx++) {
-      if(opc->operands[idx].u8[0]==X86_OPERAND_EXT) goto nxt_arg;
+      if(opc->operands[idx].u8[0]==X86_OPERAND_EXT||
+            opc->operands[idx].u8[0]==X86_OPERAND_PREV_RMx) goto nxt_arg;
       if(a>=opc->arity) break;
       if(ModeMatch(opc->operands[idx],modes[a],mem_sz)) {
 	a++;
@@ -931,6 +932,14 @@ I64 X86EncodeOpcode(I64 rip,I64 seg_size,CX86Opcode *opc,CX86AddrMode **modes,U8
 	      a++;
 	      break;
 	    }
+	  case X86_OPERAND_PREV_RMx:
+	    if(!indir_mode) {
+	      if(!a)
+	        throw('AsmItrn');
+	      indir_mode_idx=a-1;
+	      indir_mode=modes[a-1];
+	    }
+	    break;
 	  case X86_OPERAND_R8:
 	  case X86_OPERAND_R16:
 	  case X86_OPERAND_R32:
@@ -1154,7 +1163,8 @@ rex|=0x40;
 		  len+=8;
 	      }
 	    }
-	    if(opc->operands[i].u8[0]!=X86_OPERAND_EXT)
+	    if(opc->operands[i].u8[0]!=X86_OPERAND_EXT&&
+	          opc->operands[i].u8[0]!=X86_OPERAND_PREV_RMx)
 	      a++;
 	  }
         } else

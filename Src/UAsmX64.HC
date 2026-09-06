@@ -60,6 +60,7 @@
 #define X86_OPERAND_M128 49
 #define X86_OPERAND_CONST_SREG 50
 #define X86_OPERAND_EXPLICIT_IMM16 51
+#define X86_OPERAND_PREV_RMx 52
 
 class CX86Opcode:CHash {
   //-1 for absent
@@ -112,7 +113,8 @@ CX86Opcode *AO(U8 *name,I64 pf,I64 _0f,I64 po,I64 so,I64 flags,...) {
     if(idx>argc) {
       throw('UAsmInit');
     }
-    if(argv[idx]!=X86_OPERAND_EXT)
+    if(argv[idx]!=X86_OPERAND_EXT&&
+          argv[idx]!=X86_OPERAND_PREV_RMx)
       opc->arity++;
     switch(argv[idx]) {
       start:
@@ -1359,6 +1361,8 @@ U0 UAsmInit() {
   AO("IMUL",-1,-1,0xf6,-1,X86_OPCF_MODRM,X86_OPERAND_RM8,X86_OPERAND_EXT,5);
   AO("IMUL",-1,-1,0xf7,-1,X86_OPCF_MODRM,X86_OPERAND_RMx,X86_OPERAND_EXT,5);
   AO("IMUL2",-1,0xf,0xaf,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_RMx);
+  AO("IMUL2",-1,-1,0x69,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_PREV_RMx,X86_OPERAND_IMMx);
+  AO("IMUL2",-1,-1,0x6b,-1,X86_OPCF_MODRM,X86_OPERAND_Rx,X86_OPERAND_PREV_RMx,X86_OPERAND_IMM8);
 
   AO("IN",-1,-1,0xe4,-1,0,X86_OPERAND_CONST_R8,REG_RAX,X86_OPERAND_IMM8);
   AO("IN",-1,-1,0xe5,-1,X86_OPCF_OPSIZE32,X86_OPERAND_CONST_R32,REG_RAX,X86_OPERAND_IMM8);
