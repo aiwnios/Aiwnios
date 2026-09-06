@@ -2535,18 +2535,7 @@ static void PushSpilledTmp(CCmpCtrl *cctrl, CRPN *rpn) {
       cctrl->backend_user_data0 = res->off;
     }
   }
-  // See two above notes
-  res->off -= 8;
-  // In functions,wiggle room comes after the function locals.
-  if (cctrl->cur_fun && res->mode == MD_FRAME)
-    res->off += cctrl->cur_fun->base.sz + 16; //+16 for LR/FP
-  else if (res->mode == MD_FRAME) {
-    if (cctrl->backend_user_data4) {
-      res->off += cctrl->backend_user_data4; // wiggle room start(if set)
-    } else
-      // Anonymus potatoes like to assume LR/FP pair too.
-      res->off += 16;
-  }
+  res->off += cctrl->backend_user_data4;
 }
 int64_t TmpRegToReg(int64_t r) {
   switch (r) {
@@ -5609,7 +5598,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
       flist[i3++] = i;
   AIWNIOS_ADD_CODE(X86PushReg, RBP);
   AIWNIOS_ADD_CODE(X86MovRegReg, RBP, RSP);
-  if (to_push - 16 > 0)
+  if (to_push > 0)
     AIWNIOS_ADD_CODE(X86SubImm32, RSP, to_push);
   off = -old_regs_start;
   for (i = 0; i != i2; i++) {

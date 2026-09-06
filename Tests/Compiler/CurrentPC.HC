@@ -27,5 +27,8 @@ U8 *direct1=CurrentPCDirect(),*direct2=CurrentPCDirect();
 U8 *stored1=CurrentPCStored(),*stored2=CurrentPCStored();
 if (direct1!=direct2 || stored1!=stored2)
   throw('CurPC');
+if (CurrentPCDirect()!=CurrentPCDirect() ||
+    CurrentPCStored()!=CurrentPCStored())
+  throw('CurPC');
 "PASS: CurrentPC\n";
 Exit;
