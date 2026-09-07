@@ -5,6 +5,7 @@ char *FileRead(char *fn, int64_t *sz);
 
 void VFsThrdInit();
 void VFsSetDrv(char d);
+int VFsDriveMounted(char d);
 int64_t VFsDel(char *p);
 int64_t VFsUnixTime(char *name);
 int64_t VFsFSize(char *name);

@@ -135,6 +135,11 @@ void VFsSetDrv(char d) {
   thrd_drv = toupper(d);
 }
 
+int VFsDriveMounted(char d) {
+  int idx = toupper((unsigned char)d) - 'A';
+  return idx >= 0 && idx < 26 && mount_points[idx][0] != 0;
+}
+
 static bool VFsCd(char *to, bool make) {
   to = __VFsFileNameAbs(to);
   if (__FExists(to) && __FIsDir(to))
@@ -403,6 +408,7 @@ int VFsMountDrive(char let, char *path) {
   int idx = toupper(let) - 'A';
   char *p = StPCpy(mount_points[idx], path);
   strcpy(p, "/");
+  return 1;
 }
 
 int64_t VFsFBlkRead(void *d, int64_t sz, int f) {

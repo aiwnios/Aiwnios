@@ -72,7 +72,8 @@ int64_t sdl_window_grab_enable = 0;
 struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
     *sixty_fps, *arg_cmd_line, *arg_cmd_line2 = NULL, *arg_fork, *arg_no_debug,
                                *arg_grab, *arg_fast_fail, *arg_s;
-struct arg_file *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files, *arg_pidfile;
+struct arg_file *arg_t_dir, *arg_host_dir, *arg_bootstrap_bin,
+    *arg_boot_files, *arg_pidfile;
 static struct arg_end *_arg_end;
 #ifdef AIWNIOS_TESTS
 // Import PrintI first
@@ -1293,6 +1294,10 @@ static int64_t STK_VFsFSeek(int64_t *stk) {
 static int64_t STK_VFsSetDrv(int64_t *stk) {
   VFsSetDrv(stk[0]);
 }
+
+static int64_t STK_VFsDriveMounted(int64_t *stk) {
+  return VFsDriveMounted(stk[0]);
+}
 static int64_t STK_VFsUnixTime(int64_t *stk) {
   return VFsUnixTime(stk[0]);
 }
@@ -1831,6 +1836,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("VFsFClose", STK_VFsFClose, 1);
     PrsAddSymbol("VFsFSeek", STK_VFsFSeek, 2);
     PrsAddSymbol("VFsSetDrv", STK_VFsSetDrv, 1);
+    PrsAddSymbol("VFsDriveMounted", STK_VFsDriveMounted, 1);
     PrsAddSymbol("FUnixTime", STK_VFsUnixTime, 1);
     PrsAddSymbol("FSize", STK_VFsFSize, 1);
     PrsAddSymbol("VFsFTrunc", STK_VFsTrunc, 2);
@@ -1945,6 +1951,8 @@ static int64_t Boot(int64_t *) {
   }
   InstallDbgSignalsForThread();
   VFsMountDrive('T', t_drive);
+  if (arg_host_dir->count)
+    VFsMountDrive('U', (char *)arg_host_dir->filename[0]);
 #if defined(__EMSCRIPTEN__)
   EM_ASM(FS.mkdir('/persist'); FS.mount(IDBFS, {}, '/persist');
          FS.syncfs(true, function(err){}););
@@ -2082,6 +2090,9 @@ int main(int argc, char **argv) {
                    "Overwrite the T directory with the installed T template."),
       arg_t_dir = arg_file0("t", NULL, "Directory",
                             "Specify the boot drive(dft is current dir)."),
+      arg_host_dir =
+          arg_file0("U", "host-drive", "Directory",
+                    "Mount a host directory as the U drive."),
       arg_bootstrap_bin =
           arg_lit0("b", "bootstrap",
                    "Build a new binary with the \"slim\" compiler of aiwnios."),

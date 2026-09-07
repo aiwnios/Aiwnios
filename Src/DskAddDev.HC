@@ -199,8 +199,11 @@ U0 BlkDevsInitAll()
   for (i=0;i<DRVS_NUM;i++) {
     blkdev.let_to_drv[i]=&blkdev.drvs[i];
   }
-  bd=BlkDevNextFreeSlot('T',BDT_VIRT);bd->unit=0;
-  BlkDevAdd(bd,0,0,0);
+  for (i='A';i<='Z';i++)
+    if (VFsDriveMounted(i)) {
+      bd=BlkDevNextFreeSlot(i,BDT_VIRT);bd->unit=0;
+      BlkDevAdd(bd,0,0,0);
+    }
   Fs->cur_dv=Let2Drv('T');
   Fs->cur_dir=StrNew("/");
   blkdev.boot_drv_let='T';
