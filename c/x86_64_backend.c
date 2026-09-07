@@ -2535,18 +2535,7 @@ static void PushSpilledTmp(CCmpCtrl *cctrl, CRPN *rpn) {
       cctrl->backend_user_data0 = res->off;
     }
   }
-  // See two above notes
-  res->off -= 8;
-  // In functions,wiggle room comes after the function locals.
-  if (cctrl->cur_fun && res->mode == MD_FRAME)
-    res->off += cctrl->cur_fun->base.sz + 16; //+16 for LR/FP
-  else if (res->mode == MD_FRAME) {
-    if (cctrl->backend_user_data4) {
-      res->off += cctrl->backend_user_data4; // wiggle room start(if set)
-    } else
-      // Anonymus potatoes like to assume LR/FP pair too.
-      res->off += 16;
-  }
+  res->off += cctrl->backend_user_data4;
 }
 int64_t TmpRegToReg(int64_t r) {
   switch (r) {
@@ -2818,6 +2807,7 @@ static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   case IC_IREG:
   case IC_FREG:
   case IC_BASE_PTR:
+  case IC_CURRENT_PC:
   case IC_STR:
   case IC_CHR:
   case IC_FS:
@@ -5608,7 +5598,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
       flist[i3++] = i;
   AIWNIOS_ADD_CODE(X86PushReg, RBP);
   AIWNIOS_ADD_CODE(X86MovRegReg, RBP, RSP);
-  if (to_push - 16 > 0)
+  if (to_push > 0)
     AIWNIOS_ADD_CODE(X86SubImm32, RSP, to_push);
   off = -old_regs_start;
   for (i = 0; i != i2; i++) {
@@ -6331,12 +6321,26 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       [IC_COS] = &&ic_cos,
       [IC_TAN] = &&ic_tan,
       [IC_ATAN] = &&ic_atan,
+      [IC_CURRENT_PC] = &&ic_current_pc,
       [IC_RAW_BYTES] = &&ic_raw_bytes,
   };
   if (!poop_ants[rpn->type])
     goto ret;
   goto *poop_ants[rpn->type];
   do {
+  ic_current_pc:
+    if (rpn->res.mode == MD_REG)
+      into_reg = rpn->res.reg;
+    else
+      into_reg = AIWNIOS_TMP_IREG_POOP;
+    AIWNIOS_ADD_CODE(X86LeaSIB, MIR(cctrl, into_reg), -1, -1, RIP, 0);
+    if (rpn->res.mode != MD_REG) {
+      tmp.mode = MD_REG;
+      tmp.raw_type = RT_I64i;
+      tmp.reg = AIWNIOS_TMP_IREG_POOP;
+      code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+    }
+    break;
   ic_max_u64:
 #define IC_MXX_X64(OP)                                                         \
   {                                                                            \
@@ -7468,6 +7472,12 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       code_off = PutICArgIntoReg(cctrl, &next->res, RT_PTR,
                                  AIWNIOS_TMP_IREG_POOP2, bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &next->res, bin, code_off);
+      break;
+    case IC_IREG:
+      code_off = __OptPassFinal(cctrl, next, bin, code_off);
+      tmp = next->res;
+      tmp.raw_type = RT_PTR;
+      code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
       break;
     case IC_BASE_PTR:
       if (rpn->res.mode == MD_REG)

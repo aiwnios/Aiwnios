@@ -1585,7 +1585,7 @@ static void OptPassRemoveUselessTypecasts(CCmpCtrl *cctrl) {
 }
 static void OptPassMergeAddressOffsets(CCmpCtrl *cctrl) {
   CRPN *r, *arg, *next, *base, *off;
-  int64_t run;
+  int64_t run, changed;
   for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
        r = next) {
     next = r->base.next;
@@ -1623,21 +1623,24 @@ static void OptPassMergeAddressOffsets(CCmpCtrl *cctrl) {
     }
   nxt:;
   }
-  // When we do "cd3.z" we have *(base_ptr+16). Turn *(base+16) into a frame ptr
-  for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
-       r = next) {
-    next = r->base.next;
-    if (r->type == IC_DEREF && next->type == IC_ADDR_OF) {
-      base = next->base.next;
-      if (base->type == IC_BASE_PTR) {
-        // Set the raw type of the IC_DEREF to the base_ptr
-        base->raw_type = r->raw_type;
-        ICFree(r);
-        ICFree(next);
-        next = base;
+  // Collapse DEREF(ADDR_OF(x)) for direct frame and register operands.
+  do {
+    changed = 0;
+    for (r = cctrl->code_ctrl->ir_code->next; r != cctrl->code_ctrl->ir_code;
+         r = r->base.next) {
+      next = r->base.next;
+      if (r->type == IC_DEREF && next->type == IC_ADDR_OF) {
+        base = next->base.next;
+        if (base->type == IC_BASE_PTR || base->type == IC_IREG) {
+          base->raw_type = r->raw_type;
+          ICFree(r);
+          ICFree(next);
+          changed = 1;
+          break;
+        }
       }
     }
-  }
+  } while (changed);
 }
 
 char *Compile(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,

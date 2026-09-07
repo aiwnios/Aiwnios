@@ -953,6 +953,7 @@ static int64_t IsCompare(int64_t c) {
 // Returns 1 if we hit the bottom
 static int64_t PushTmpDepthFirst(CCmpCtrl *cctrl, CRPN *r, int64_t spilled) {
   switch (r->type) {
+  case IC_CURRENT_PC:
   case __IC_STATIC_REF:
   case IC_STATIC:
   case IC_GLOBAL:
@@ -2931,11 +2932,21 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       [IC_TAN] = &&ic_tan,
       [IC_ATAN] = &&ic_atan,
       [IC_RAW_BYTES] = &&ic_raw_bytes,
+      [IC_CURRENT_PC] = &&ic_current_pc,
   };
   if (!poop_ants[rpn->type])
     goto ret;
   goto *poop_ants[rpn->type];
   do {
+  ic_current_pc:
+    into_reg = rpn->res.mode == MD_REG ? rpn->res.reg : RISCV_IPOOP1;
+    AIWNIOS_ADD_CODE(RISCV_AUIPC(MIR(cctrl, into_reg), 0));
+    AIWNIOS_ADD_CODE(RISCV_ADDI(MIR(cctrl, into_reg), into_reg, 8));
+    tmp.mode = MD_REG;
+    tmp.raw_type = RT_I64i;
+    tmp.reg = into_reg;
+    code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
+    break;
   ic_max_u64:
     // Integers only
 #define IC_MXX_X64(OP)                                                         \
@@ -3748,6 +3759,12 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       code_off = PutICArgIntoReg(cctrl, &next->res, RT_PTR, RISCV_IPOOP2, bin,
                                  code_off);
       code_off = ICMov(cctrl, &rpn->res, &next->res, bin, code_off);
+      break;
+    case IC_IREG:
+      code_off = __OptPassFinal(cctrl, next, bin, code_off);
+      tmp = next->res;
+      tmp.raw_type = RT_PTR;
+      code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
       break;
     case IC_BASE_PTR:
       if (rpn->res.mode == MD_REG)

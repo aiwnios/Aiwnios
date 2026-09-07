@@ -1199,6 +1199,9 @@ static int64_t STK___HC_ICAdd_Reloc(int64_t *stk) {
 static int64_t STK___HC_ICAdd_RelocUnique(int64_t *stk) {
   return __HC_ICAdd_RelocUnqiue(stk[0], stk[1], stk[2], stk[3], stk[4], stk[5]);
 }
+static int64_t STK___HC_ICAdd_CurrentPC(int64_t *stk) {
+  return __HC_ICAdd_CurrentPC(stk[0]);
+}
 
 static int64_t STK___HC_ICSetLine(int64_t *stk) {
   __HC_ICSetLine(stk[0], stk[1]);
@@ -1587,6 +1590,7 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("MakeContext", STK_AIWNIOS_makecontext, 3);
 #endif
     PrsAddSymbol("__HC_ICAdd_RawBytes", STK__HC_ICAdd_RawBytes, 3);
+    PrsAddSymbol("__HC_ICAdd_CurrentPC", STK___HC_ICAdd_CurrentPC, 1);
     PrsAddSymbol("__HC_SetAOTRelocBeforeRIP", STK___HC_SetAOTRelocBeforeRIP, 2);
     PrsAddSymbol("__HC_CodeMiscIsUsed", STK___HC_CodeMiscIsUsed, 1);
     PrsAddSymbol("AiwniosSetClipboard", STK_AiwniosSetClipboard, 1);
@@ -2002,8 +2006,11 @@ static int64_t Boot(int64_t *) {
   } else
     BootAiwnios(NULL);
   glbl_table = Fs->hash_table;
-  if (hcrt)
-    loaded_hcrt = Load(hcrt, hcrt_size);
+  loaded_hcrt = Load(hcrt, hcrt_size);
+  if (!loaded_hcrt) {
+    fprintf(stderr, "HCRT2.BIN is missing or has an incomplete header; run with -b to bootstrap it.\n");
+    exit(EXIT_FAILURE);
+  }
 }
 static int64_t quit = 0, quit_code = 0;
 static void AiwniosBye() {

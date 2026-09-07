@@ -406,6 +406,8 @@ char *Load(char *fbuf, int64_t size) {
   int64_t module_align, misalignment;
   CBinFile *bfh;
   CBinFile *bfh_addr;
+  if (!fbuf || size < (int64_t)sizeof(CBinFile))
+    return NULL;
   CHeapCtrl *hc = HeapCtrlInit(NULL, Fs, 1);
   SetWriteNP(0);
   bfh = A_MALLOC(size, hc);

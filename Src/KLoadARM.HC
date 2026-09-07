@@ -113,7 +113,7 @@ U0 SysSymImportsResolve(U8 *st_ptr,I64 ld_flags)
 U0 LoadPass1(U8 *src,U8 *module_base,I64 ld_flags)
 {
   U8 *ptr2,*ptr3,*st_ptr;
-  I64 i,j,cnt,etype;
+  I64 i,j,cnt,etype,ref_offset;
   CHashExport *tmpex=NULL;
   while (etype=*src++) {
     i=*src(U32 *)++;
@@ -140,11 +140,11 @@ U0 LoadPass1(U8 *src,U8 *module_base,I64 ld_flags)
 	break;
       case IET_ABS_ADDR:
 	if (ld_flags & LDF_NO_ABSS)
-	  src+=i*sizeof(U64);
+	  src+=i*sizeof(U32);
 	else {
 	  cnt=i;
 	  for (j=0;j<cnt;j++) {
-	    ptr2=module_base+*src(U64 *)++;
+	    ptr2=module_base+*src(U32 *)++;
 	    *ptr2(U64 *)+=module_base;
 	  }
 	}
@@ -190,7 +190,8 @@ U0 LoadPass1(U8 *src,U8 *module_base,I64 ld_flags)
 	cnt=i;
 	for (j=0;j<cnt;j++) {
 	  ptr2=module_base+*src(U32 *)++;
-	  *ptr2(I64 *)+=ptr3;
+	  ref_offset=*src(U32 *)++;
+	  *ptr2(I64 *)+=ptr3+ref_offset;
 	}
 	break;
     }
@@ -216,7 +217,7 @@ U0 LoadPass2(U8 *src,U8 *module_base,I64)
 	(*code)();
         break;
       case IET_ABS_ADDR:
-        src+=sizeof(U64)*i;
+        src+=sizeof(U32)*i;
         break;
       case IET_CODE_HEAP:
       case IET_ZEROED_CODE_HEAP:
