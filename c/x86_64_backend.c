@@ -1,5 +1,4 @@
 // X86_64 assembly generator
-#include "aiwn_arm.h"
 #include "aiwn_asm.h"
 #include "aiwn_except.h"
 #include "aiwn_hash.h"
@@ -89,6 +88,7 @@ extern int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
                      int64_t code_off);
 extern int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                               int64_t code_off);
+static int64_t X86Jcc(char *to, int64_t cond, int64_t off);
 
 #define X86_64_BASE_REG  5
 #define X86_64_STACK_REG 4
@@ -160,8 +160,8 @@ static uint8_t ErectREX(int64_t big, int64_t reg, int64_t index, int64_t base) {
 #define SIB_END()                                                              \
   if (I == -1 && B == -1) {                                                    \
     ADD_U8(((R & 0b111) << 3) | 0b100);                                        \
-    \  
-      ADD_U8(0x25);                                                            \
+                                                                               \
+    ADD_U8(0x25);                                                              \
     ADD_U32(O);                                                                \
     break;                                                                     \
   }                                                                            \
@@ -1345,6 +1345,16 @@ static int64_t X86IMul2Reg(char *to, int64_t a, int64_t b) {
   ADD_U8(MODRMRegReg(a, b));
   return len;
 }
+static int64_t X86IMul2RegImm(char *to, int64_t a, int64_t b, int64_t imm8) {
+  int64_t len = 0;
+  char buf[16];
+  to = to ?: buf;
+  ADD_U8(ErectREX(1, a, 0, b));
+  ADD_U8(0x6b);
+  ADD_U8(MODRMRegReg(a, b));
+  ADD_U8(imm8);
+  return len;
+}
 
 static int64_t X86IMul2SIB64(char *to, int64_t r, int64_t s, int64_t i,
                              int64_t b, int64_t off) {
@@ -1634,6 +1644,113 @@ int64_t X86MovRegIndirF64(char *to, int64_t reg, int64_t scale, int64_t index,
   SIB_BEGIN(1, reg, scale, index, base, off);
   ADD_U8(0x0F);
   ADD_U8(0x10);
+  SIB_END();
+  return len;
+}
+
+static int64_t X86MovRegIndirDQU(char *to, int64_t reg, int64_t scale,
+                                 int64_t index, int64_t base, int64_t off) {
+  int64_t len = 0;
+  char buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0xf3);
+  SIB_BEGIN(0, reg, scale, index, base, off);
+  ADD_U8(0x0F);
+  ADD_U8(0x6f);
+  SIB_END();
+  return len;
+}
+static int64_t X86MovIndirRegDQU(char *to, int64_t reg, int64_t scale,
+                                 int64_t index, int64_t base, int64_t off) {
+  int64_t len = 0;
+  char buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0xf3);
+  SIB_BEGIN(0, reg, scale, index, base, off);
+  ADD_U8(0x0F);
+  ADD_U8(0x7f);
+  SIB_END();
+  return len;
+}
+static int64_t X86PackedShuffleD128(char *to, int64_t a, int64_t b,
+                                    int64_t imm8) {
+  int64_t len = 0;
+  char buf[16];
+  to = to ?: buf;
+  ADD_U8(0x66);
+  if ((a & 0b1000) || (b & 0b1000))
+    ADD_U8(ErectREX(0, a, 0, b));
+  ADD_U8(0x0f);
+  ADD_U8(0x70);
+  ADD_U8(MODRMRegReg(a, b));
+  ADD_U8(imm8);
+  return len;
+}
+// Packed-double ALU, reg-reg forms (mirror X86AddSDReg with 0x66 prefix).
+static int64_t X86AddPDReg(char *to, int64_t a, int64_t b) {
+  int64_t len = 0;
+  char buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0x66);
+  if ((a & 0b1000) || (b & 0b1000))
+    ADD_U8(ErectREX(0, a, 0, b));
+  ADD_U8(0x0f);
+  ADD_U8(0x58);
+  ADD_U8(MODRMRegReg(a, b));
+  return len;
+}
+static int64_t X86MulPDReg(char *to, int64_t a, int64_t b) {
+  int64_t len = 0;
+  char buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0x66);
+  if ((a & 0b1000) || (b & 0b1000))
+    ADD_U8(ErectREX(0, a, 0, b));
+  ADD_U8(0x0f);
+  ADD_U8(0x59);
+  ADD_U8(MODRMRegReg(a, b));
+  return len;
+}
+static int64_t X86UnpcklpdRegReg(char *to, int64_t a, int64_t b) {
+  int64_t len = 0;
+  char buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0x66);
+  if ((a & 0b1000) || (b & 0b1000))
+    ADD_U8(ErectREX(0, a, 0, b));
+  ADD_U8(0x0f);
+  ADD_U8(0x14);
+  ADD_U8(MODRMRegReg(a, b));
+  return len;
+}
+static int64_t X86MovUPDRegSIB128(char *to, int64_t reg, int64_t scale,
+                                  int64_t index, int64_t base, int64_t off) {
+  int64_t len = 0;
+  char buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0x66);
+  SIB_BEGIN(0, reg, scale, index, base, off);
+  ADD_U8(0x0F);
+  ADD_U8(0x10);
+  SIB_END();
+  return len;
+}
+static int64_t X86MovUPDSIBReg128(char *to, int64_t reg, int64_t scale,
+                                  int64_t index, int64_t base, int64_t off) {
+  int64_t len = 0;
+  char buf[16];
+  if (!to)
+    to = buf;
+  ADD_U8(0x66);
+  SIB_BEGIN(0, reg, scale, index, base, off);
+  ADD_U8(0x0F);
+  ADD_U8(0x11);
   SIB_END();
   return len;
 }
@@ -3371,6 +3488,89 @@ static int64_t DstRegAffectsMode(CICArg *d, CICArg *arg) {
   }
   return 0;
 }
+
+#define INLINES C(MemSet) C(MemCpy)
+#define S(x) __SMALL_##x
+#define C(x)    __SMALL_##x,
+enum { INLINES __SMALL_CNT };
+#undef C
+#define C(x) {__SMALL_##x, #x},
+struct inlines {
+  int e;
+  const char *s;
+} __INLINES[] = {INLINES}, *__INLINES_END = __INLINES + S(CNT);
+#undef C
+
+static int64_t __ICInlineSmallMem(CCmpCtrl *cctrl, CRPN *rpn, CRPN *dstn,
+                                  CRPN *srcn, int64_t n,
+                                  struct inlines *which, char *bin,
+                                  int64_t code_off) {
+  CICArg dstm, valv;
+  dstm = valv = (CICArg){.mode = MD_REG, .raw_type = RT_I64i};
+  dstm.reg = AIWNIOS_TMP_IREG_POOP, valv.reg = AIWNIOS_TMP_IREG_POOP2;
+  int64_t i = 0, k, B = 0x0101010101010101ull;
+  dstn->res.keep_in_tmp = srcn->res.keep_in_tmp = 1;
+  code_off = __OptPassFinal(cctrl, dstn, bin, code_off);
+  code_off = ICMov(cctrl, &dstm, &dstn->res, bin, code_off);
+  int8_t __d = MIR(cctrl, dstm.reg);
+  code_off = __OptPassFinal(cctrl, srcn, bin, code_off);
+  code_off = ICMov(cctrl, &valv, &srcn->res, bin, code_off);
+  int8_t __s = MIR(cctrl, valv.reg);
+  dstm.mode = MD_INDIR_REG;
+  switch (which->e) {
+  case S(MemSet):
+    valv.mode = MD_REG;
+    if (srcn->type == IC_I64) {
+      AIWNIOS_ADD_CODE(X86MovImm, __s, B * (srcn->integer & 0xFF));
+    } else {
+      AIWNIOS_ADD_CODE(X86AndImm, __s, 0xFF);
+      AIWNIOS_ADD_CODE(X86MovImm, RAX, B);
+      AIWNIOS_ADD_CODE(X86IMul2Reg, __s, RAX);
+    }
+    if (n / 16) {
+      AIWNIOS_ADD_CODE(X86MovQF64I64, MFR(cctrl, 0), __s);
+      AIWNIOS_ADD_CODE(X86PackedShuffleD128, MFR(cctrl, 0), MFR(cctrl, 0), 0);
+      do {
+        AIWNIOS_ADD_CODE(X86MovIndirRegDQU, MFR(cctrl, 0), -1, -1, __d, i);
+        n -= 16, i += 16;
+      } while (n / 16);
+    }
+    for (k = 8; k; k /= 2) {
+      if (n / k) { //                   aiwn_hash.h
+        dstm.raw_type = valv.raw_type = (__builtin_ctz(k) + 1) << 1;
+        for (; n / k; n -= k, i += k) {
+          dstm.off = i;
+          code_off = ICMov(cctrl, &dstm, &valv, bin, code_off);
+        }
+      }
+    }
+    break;
+  case S(MemCpy):
+    valv.mode = MD_INDIR_REG;
+    for (; n / 16; i += 16, n -= 16) {
+      AIWNIOS_ADD_CODE(X86MovRegIndirDQU, MFR(cctrl, 0), -1, -1, __s, i);
+      AIWNIOS_ADD_CODE(X86MovIndirRegDQU, MFR(cctrl, 0), -1, -1, __d, i);
+    }
+    CICArg bullshit = {.mode = MD_REG, .reg = RAX};
+    for (k = 8; k; k /= 2) {
+      if (n / k) {
+        bullshit.raw_type = dstm.raw_type = valv.raw_type =
+            (__builtin_ctz(k) + 1) << 1;
+        for (; n / k; n -= k, i += k) {
+          dstm.off = valv.off = i;
+          code_off = ICMov(cctrl, &bullshit, &valv, bin, code_off);
+          code_off = ICMov(cctrl, &dstm, &bullshit, bin, code_off);
+        }
+      }
+    }
+    break;
+  default:
+    __builtin_unreachable();
+  }
+  AIWNIOS_ADD_CODE(X86MovRegReg, RAX, __d);
+  return code_off;
+}
+
 static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                             int64_t code_off) {
   int64_t i, has_vargs = 0;
@@ -3378,6 +3578,49 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   CRPN *rpn2;
   int64_t to_pop = rpn->length * 8;
   void *fptr;
+  // inline memcpy/memset w/ sz<=128
+  {
+    static void *memfps[S(CNT)];
+    CRPN *funn, *szn;
+    struct inlines *nm = 0;
+    if (rpn->length != 3 || (rpn->flags & ICF_LOCK_EXPR))
+      goto notmem;
+    funn = ICArgN(rpn, rpn->length);
+    // only IC_I64 ("direct-address") is inlined (ie, the one the
+    // holyc jit path produces for host symbols)
+    // IC_GLOBAL is from C parser (skipped)
+    // IC_RELOC is "real" AOT (skipped for now)
+    switch (funn->type) {
+    case IC_RELOC:
+      // funn->code_misc->str
+      // surprisingly, memcpy/memset is not used in AOT; useless to implement
+      goto notmem;
+    case IC_I64:
+      if (__builtin_expect_with_probability(!*memfps, 0, .999)) {
+        for (__auto_type x = __INLINES; x != __INLINES_END; x++) {
+          CHash *h = HashFind(x->s, Fs->hash_table, HTT_EXPORT_SYS_SYM, 1);
+          memfps[x->e] = h ? ((CHashExport *)h)->val : (void *)-1ul;
+        }
+      }
+      void *fp = funn->integer;
+      for (__auto_type x = __INLINES; x != __INLINES_END; x++)
+        if (fp == memfps[x->e])
+          nm = memfps + x->e;
+      if (!nm)
+        goto notmem;
+      break;
+    default:
+      goto notmem;
+    }
+    szn = ICArgN(rpn, 0);
+    if (szn->type != IC_I64 || szn->integer > 128 || szn->integer < 0)
+      goto notmem;
+    // dst=ICArgN(2), src/val=ICArgN(1), n=ICArgN(0) (see FixFunArgs)
+    code_off = __ICInlineSmallMem(cctrl, rpn, ICArgN(rpn, 2), ICArgN(rpn, 1),
+                                  szn->integer, nm, bin, code_off);
+    return code_off;
+  }
+notmem:
   for (i = 0; i < rpn->length; i++) {
     rpn2 = ICArgN(rpn, i);
     if (rpn2->type == __IC_VARGS) {

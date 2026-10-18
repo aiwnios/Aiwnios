@@ -608,7 +608,6 @@ int CreateTemplateBootDrv(char *to, char *template) {
 
 const char *ResolveBootDir(char *use, int make_new_dir,
                            const char *template_dir) {
-  printf("%d\n", __FExists("/HCRT2.BIN"));
   if (!make_new_dir && __FExists("HCRT2.BIN"))
     return ".";
   if (!make_new_dir && __FExists("T/HCRT2.BIN"))
