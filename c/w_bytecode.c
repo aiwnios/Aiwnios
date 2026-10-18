@@ -1157,82 +1157,84 @@ static int64_t CompileToBC0(CCmpCtrl *cc, ABC_PTR ptr, CRPN *rpn, int64_t len) {
     len = AiwnBCAddCode(ptr, ABC_NE | (rpn->raw_type << 8), len);
     break;
   case IC_LE:
-  cmp_style: {
-    CRPN *next;
-    int64_t range[IM_STK_SIZE];
-    CRPN *range_args[IM_STK_SIZE];
-    int64_t skipos[IM_STK_SIZE];
-    int64_t cnt = 0, i = 0;
-    for (next = rpn; 1; next = ICFwd((CRPN *)next->base.next) // TODO explain
-    ) {
-      switch (next->type) {
-      case IC_LT:
-      case IC_GT:
-      case IC_LE:
-      case IC_GE:
-        goto cmp_pass;
+  cmp_style:
+    {
+      CRPN *next;
+      int64_t range[IM_STK_SIZE];
+      CRPN *range_args[IM_STK_SIZE];
+      int64_t skipos[IM_STK_SIZE];
+      int64_t cnt = 0, i = 0;
+      for (next = rpn; 1; next = ICFwd((CRPN *)next->base.next) // TODO explain
+      ) {
+        switch (next->type) {
+        case IC_LT:
+        case IC_GT:
+        case IC_LE:
+        case IC_GE:
+          goto cmp_pass;
+        }
+        range_args[cnt] = next; // See below
+        break;
+      cmp_pass:
+        //
+        // <
+        //    right rpn.next
+        //    left  ICFwd(rpn.next)
+        //
+        range_args[cnt] = (CRPN *)next->base.next;
+        range[cnt] = next->type;
+        cnt++;
       }
-      range_args[cnt] = next; // See below
-      break;
-    cmp_pass:
-      //
-      // <
-      //    right rpn.next
-      //    left  ICFwd(rpn.next)
-      //
-      range_args[cnt] = (CRPN *)next->base.next;
-      range[cnt] = next->type;
-      cnt++;
-    }
-    t = RT_I64i;
-    for (i = 0; i <= cnt; ++i) {
-      if (range_args[i]->raw_type == RT_F64)
-        t = RT_F64;
-      else if (range_args[i]->raw_type == RT_U64i && t != RT_F64)
-        t = RT_U64i;
-    }
-    arg1 = range_args[cnt];
-    len = CompileToBC0(cc, ptr, arg1, len);
-    if (t == RT_F64 && arg1->raw_type != RT_F64)
-      len = AiwnBCAddCode(ptr, ABC_TO_F64 | (t << 8), len);
-    i = cnt;
-    while (--cnt >= 0) {
-      arg0 = range_args[cnt];
-      len = CompileToBC0(cc, ptr, arg0, len);
-      if (t == RT_F64 && arg0->raw_type != RT_F64)
+      t = RT_I64i;
+      for (i = 0; i <= cnt; ++i) {
+        if (range_args[i]->raw_type == RT_F64)
+          t = RT_F64;
+        else if (range_args[i]->raw_type == RT_U64i && t != RT_F64)
+          t = RT_U64i;
+      }
+      arg1 = range_args[cnt];
+      len = CompileToBC0(cc, ptr, arg1, len);
+      if (t == RT_F64 && arg1->raw_type != RT_F64)
         len = AiwnBCAddCode(ptr, ABC_TO_F64 | (t << 8), len);
-      len = AiwnBCAddCode(ptr, ABC_DUP | (t << 8), len);
-      len = AiwnBCAddCode(ptr, ABC_PUSH, len);
-      switch (range[cnt]) {
-        break;
-      case IC_LT:
-        len = AiwnBCAddCode(ptr, ABC_LT | (t << 8), len);
-        break;
-      case IC_LE:
-        len = AiwnBCAddCode(ptr, ABC_LE | (t << 8), len);
-        break;
-      case IC_GE:
-        len = AiwnBCAddCode(ptr, ABC_GE | (t << 8), len);
-        break;
-      case IC_GT:
-        len = AiwnBCAddCode(ptr, ABC_GT | (t << 8), len);
+      i = cnt;
+      while (--cnt >= 0) {
+        arg0 = range_args[cnt];
+        len = CompileToBC0(cc, ptr, arg0, len);
+        if (t == RT_F64 && arg0->raw_type != RT_F64)
+          len = AiwnBCAddCode(ptr, ABC_TO_F64 | (t << 8), len);
+        len = AiwnBCAddCode(ptr, ABC_DUP | (t << 8), len);
+        len = AiwnBCAddCode(ptr, ABC_PUSH, len);
+        switch (range[cnt]) {
+          break;
+        case IC_LT:
+          len = AiwnBCAddCode(ptr, ABC_LT | (t << 8), len);
+          break;
+        case IC_LE:
+          len = AiwnBCAddCode(ptr, ABC_LE | (t << 8), len);
+          break;
+        case IC_GE:
+          len = AiwnBCAddCode(ptr, ABC_GE | (t << 8), len);
+          break;
+        case IC_GT:
+          len = AiwnBCAddCode(ptr, ABC_GT | (t << 8), len);
+        }
+        if (cnt) {
+          skipos[cnt] = len;
+          len = AiwnBCAddCode(ptr, ABC_SKIP_ON_FAIL | (RT_I64i << 8), len);
+          len = AiwnBCAddCode(ptr, 0, len);
+          len = AiwnBCAddCode(ptr, ABC_POP | (t << 8), len);
+        }
       }
-      if (cnt) {
-        skipos[cnt] = len;
-        len = AiwnBCAddCode(ptr, ABC_SKIP_ON_FAIL | (RT_I64i << 8), len);
-        len = AiwnBCAddCode(ptr, 0, len);
-        len = AiwnBCAddCode(ptr, ABC_POP | (t << 8), len);
-      }
-    }
 
-    if (ptr)
-      for (cnt = i; --cnt >= 0;) {
-        if (cnt)
-          *(uint32_t *)(ptr + skipos[cnt] + 4) = len - skipos[cnt];
-      }
-    len = AiwnBCAddCode(ptr, ABC_DISCARD_STK, len);
-    len = AiwnBCAddCode(ptr, 8, len);
-  } break;
+      if (ptr)
+        for (cnt = i; --cnt >= 0;) {
+          if (cnt)
+            *(uint32_t *)(ptr + skipos[cnt] + 4) = len - skipos[cnt];
+        }
+      len = AiwnBCAddCode(ptr, ABC_DISCARD_STK, len);
+      len = AiwnBCAddCode(ptr, 8, len);
+    }
+    break;
   case IC_GE:
     goto cmp_style;
   case IC_LSH:
@@ -1632,7 +1634,7 @@ again:;
     case CMT_JMP_TAB:
       to = 0;
       cm->addr = bin + len;
-      for (i = 0; i <= cm->hi - cm->lo ; ++i) {
+      for (i = 0; i <= cm->hi - cm->lo; ++i) {
         if (bin) {
           to = cm->jmp_tab[i];
           if (!to)
@@ -1640,7 +1642,7 @@ again:;
           ((uint64_t *)(bin + len))[i] = (uint64_t)to->addr;
         }
       }
-      len += 8 * (i+1);
+      len += 8 * (i + 1);
       goto fill_in_refs;
       break;
     case CMT_STRING:
@@ -1811,8 +1813,8 @@ int64_t AiwnBCMakeContext(int64_t *to_stk) {
 #if defined(USE_BYTECODE)
 extern CHashTable *glbl_table;
 static void DoPendingInterupt() {
-  if (bc_interupt==3) {
-	  bc_interupt=0;
+  if (bc_interupt == 3) {
+    bc_interupt = 0;
     CHashExport *y = HashFind("InteruptRt", glbl_table, HTT_EXPORT_SYS_SYM, 1);
     ABCFrame *ff;
     if (y) {
@@ -1839,7 +1841,7 @@ int64_t FFI_CALL_TOS_0_FEW_INSTS(void *fptr, int64_t iterations) {
   int64_t ret;
   static ABCState *state;
   int64_t t = SDL_GetTicks64();
-    LBts(&bc_interupt,1); //Bit 1 is interrupts enable
+  LBts(&bc_interupt, 1); // Bit 1 is interrupts enable
   if (!active) {
     active = 1;
     size_t stk_sz = 0x20000;
@@ -1867,8 +1869,8 @@ int64_t FFI_CALL_TOS_0_FEW_INSTS(void *fptr, int64_t iterations) {
         break;
     }
   }
- LBtr(&bc_interupt,1); //Bit 1 is interrupts enable
-    
+  LBtr(&bc_interupt, 1); // Bit 1 is interrupts enable
+
   if (!state->ip) {
     free(state);
     state = NULL;
@@ -1983,7 +1985,7 @@ void *AiwnBCDbgCurContext() {
 }
 void BCInterupt() {
 #  ifdef __EMSCRIPTEN__
-  LBts(&bc_interupt, 0); // bit 0 is psending interupt 
+  LBts(&bc_interupt, 0); // bit 0 is psending interupt
 #  endif
 }
 void AiwnBCDbgFault(int sig) {

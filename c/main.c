@@ -1298,9 +1298,9 @@ static int64_t STK_VFsTrunc(int64_t *stk) {
 }
 static int64_t STK_UpdateScreen(int64_t *stk) {
   UpdateScreen(stk[0], stk[1], stk[2], stk[3]);
-  #ifdef __EMSCRIPTEN__
+#ifdef __EMSCRIPTEN__
   BCAwake();
-  #endif
+#endif
 }
 static int64_t STK_VFsFSize(int64_t *stk) {
   return VFsFSize(stk[0]);
@@ -2252,12 +2252,12 @@ int main(int argc, char **argv) {
     emscripten_set_main_loop(EMMainLoop, 0, 1);
     return 0;
 #else
-#ifdef USE_BYTECODE
+#  ifdef USE_BYTECODE
     SpawnCore(GenFFIBinding(&Boot, 0), argv[0], 0);
-#else
-//This is ok,ask nroot why if you care to know
+#  else
+    // This is ok,ask nroot why if you care to know
     SpawnCore(&Boot, argv[0], 0);
-#endif
+#  endif
     InputLoop(&quit);
 #endif
   } else {

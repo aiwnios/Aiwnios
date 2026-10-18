@@ -93,7 +93,7 @@ extern int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 #define X86_64_BASE_REG  5
 #define X86_64_STACK_REG 4
 
-#define INST(func, ...)                                            \
+#define INST(func, ...)                                                        \
   {                                                                            \
     if (bin)                                                                   \
       code_off += func(bin + code_off, __VA_ARGS__);                           \
@@ -1344,7 +1344,7 @@ static int64_t DstRegAffectsMode(CICArg *d, CICArg *arg) {
 }
 
 #define INLINES C(MemSet) C(MemCpy)
-#define S(x) __SMALL_##x
+#define S(x)    __SMALL_##x
 #define C(x)    __SMALL_##x,
 enum { INLINES __SMALL_CNT };
 #undef C
@@ -1356,9 +1356,8 @@ struct inlines {
 #undef C
 
 static int64_t __ICInlineSmallMem(CCmpCtrl *cctrl, CRPN *rpn, CRPN *dstn,
-                                  CRPN *srcn, int64_t n,
-                                  struct inlines *which, char *bin,
-                                  int64_t code_off) {
+                                  CRPN *srcn, int64_t n, struct inlines *which,
+                                  char *bin, int64_t code_off) {
   CICArg dstm, valv;
   dstm = valv = (CICArg){.mode = MD_REG, .raw_type = RT_I64i};
   dstm.reg = AIWNIOS_TMP_IREG_POOP, valv.reg = AIWNIOS_TMP_IREG_POOP2;
@@ -1602,29 +1601,24 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
       case RT_I8i:
-        INST(X86MovIndirRegI8, MIR(cctrl, src->reg), -1, -1, RIP,
-                         0);
+        INST(X86MovIndirRegI8, MIR(cctrl, src->reg), -1, -1, RIP, 0);
         break;
       case RT_U16i:
       case RT_I16i:
-        INST(X86MovIndirRegI16, MIR(cctrl, src->reg), -1, -1, RIP,
-                         0);
+        INST(X86MovIndirRegI16, MIR(cctrl, src->reg), -1, -1, RIP, 0);
         break;
       case RT_U32i:
       case RT_I32i:
-        INST(X86MovIndirRegI32, MIR(cctrl, src->reg), -1, -1, RIP,
-                         0);
+        INST(X86MovIndirRegI32, MIR(cctrl, src->reg), -1, -1, RIP, 0);
         break;
       case RT_PTR:
       case RT_U64i:
       case RT_I64i:
       case RT_FUNC:
-        INST(X86MovIndirRegI64, MIR(cctrl, src->reg), -1, -1, RIP,
-                         0);
+        INST(X86MovIndirRegI64, MIR(cctrl, src->reg), -1, -1, RIP, 0);
         break;
       case RT_F64:
-        INST(X86MovIndirRegF64, MFR(cctrl, src->reg), -1, -1, RIP,
-                         0);
+        INST(X86MovIndirRegF64, MFR(cctrl, src->reg), -1, -1, RIP, 0);
         break;
       default:
         abort();
@@ -1641,26 +1635,26 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
       case RT_I8i:
-        INST(X86MovIndirI8Imm, src->integer, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        INST(X86MovIndirI8Imm, src->integer, dst->__SIB_scale, dst->reg2,
+             dst->reg, dst->off);
         break;
       case RT_U16i:
       case RT_I16i:
 
-        INST(X86MovIndirI16Imm, src->integer, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        INST(X86MovIndirI16Imm, src->integer, dst->__SIB_scale, dst->reg2,
+             dst->reg, dst->off);
         break;
       case RT_U32i:
       case RT_I32i:
-        INST(X86MovIndirI32Imm, src->integer, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        INST(X86MovIndirI32Imm, src->integer, dst->__SIB_scale, dst->reg2,
+             dst->reg, dst->off);
         break;
       case RT_PTR:
       case RT_U64i:
       case RT_I64i:
       case RT_FUNC:
-        INST(X86MovIndirI64Imm, src->integer, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        INST(X86MovIndirI64Imm, src->integer, dst->__SIB_scale, dst->reg2,
+             dst->reg, dst->off);
         break;
       default:
         abort();
@@ -1672,30 +1666,30 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
       case RT_I8i:
-        INST(X86MovIndirRegI8, src->reg, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        INST(X86MovIndirRegI8, src->reg, dst->__SIB_scale, dst->reg2, dst->reg,
+             dst->off);
         break;
       case RT_U16i:
       case RT_I16i:
-        INST(X86MovIndirRegI16, src->reg, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        INST(X86MovIndirRegI16, src->reg, dst->__SIB_scale, dst->reg2, dst->reg,
+             dst->off);
         break;
       case RT_U32i:
       case RT_I32i:
-        INST(X86MovIndirRegI32, src->reg, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        INST(X86MovIndirRegI32, src->reg, dst->__SIB_scale, dst->reg2, dst->reg,
+             dst->off);
         break;
       case RT_PTR:
       case RT_U64i:
       case RT_I64i:
       case RT_FUNC:
-        INST(X86MovIndirRegI64, src->reg, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        INST(X86MovIndirRegI64, src->reg, dst->__SIB_scale, dst->reg2, dst->reg,
+             dst->off);
         break;
       case RT_F64:
         // TODO atomic
-        INST(X86MovIndirRegF64, src->reg, dst->__SIB_scale,
-                         dst->reg2, dst->reg, dst->off);
+        INST(X86MovIndirRegF64, src->reg, dst->__SIB_scale, dst->reg2, dst->reg,
+             dst->off);
         break;
       default:
         abort();
@@ -1751,13 +1745,11 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
       case RT_I8i:
-        INST(X86MovIndirRegI8, MIR(cctrl, src->reg), -1, -1, RIP,
-                         1000);
+        INST(X86MovIndirRegI8, MIR(cctrl, src->reg), -1, -1, RIP, 1000);
         break;
       case RT_U16i:
       case RT_I16i:
-        INST(X86MovIndirRegI16, MIR(cctrl, src->reg), -1, -1, RIP,
-                         1000);
+        INST(X86MovIndirRegI16, MIR(cctrl, src->reg), -1, -1, RIP, 1000);
         break;
       case RT_U32i:
       case RT_I32i:
@@ -1767,12 +1759,10 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       case RT_U64i:
       case RT_I64i:
       case RT_FUNC:
-        INST(X86MovIndirRegI64, MIR(cctrl, src->reg), -1, -1, RIP,
-                         1000);
+        INST(X86MovIndirRegI64, MIR(cctrl, src->reg), -1, -1, RIP, 1000);
         break;
       case RT_F64:
-        INST(X86MovIndirRegF64, MFR(cctrl, src->reg), -1, -1, RIP,
-                         1000);
+        INST(X86MovIndirRegF64, MFR(cctrl, src->reg), -1, -1, RIP, 1000);
         break;
       default:
         abort();
@@ -1805,25 +1795,21 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         break;
       case RT_U8i:
       case RT_I8i:
-        INST(X86MovIndirI8Imm, src->integer, -1, -1, use_reg2,
-                         indir_off);
+        INST(X86MovIndirI8Imm, src->integer, -1, -1, use_reg2, indir_off);
         break;
       case RT_U16i:
       case RT_I16i:
-        INST(X86MovIndirI16Imm, src->integer, -1, -1, use_reg2,
-                         indir_off);
+        INST(X86MovIndirI16Imm, src->integer, -1, -1, use_reg2, indir_off);
         break;
       case RT_U32i:
       case RT_I32i:
-        INST(X86MovIndirI32Imm, src->integer, -1, -1, use_reg2,
-                         indir_off);
+        INST(X86MovIndirI32Imm, src->integer, -1, -1, use_reg2, indir_off);
         break;
       case RT_PTR:
       case RT_U64i:
       case RT_I64i:
       case RT_FUNC:
-        INST(X86MovIndirI64Imm, src->integer, -1, -1, use_reg2,
-                         indir_off);
+        INST(X86MovIndirI64Imm, src->integer, -1, -1, use_reg2, indir_off);
         break;
       default:
         abort();
@@ -1844,11 +1830,11 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         if (src->mode == MD_REG) {
           INST(X86CVTTSI2SDRegReg, MFR(cctrl, use_reg), src->reg);
         } else if (src->mode == MD_INDIR_REG && RawTypeIs64(src->raw_type)) {
-          INST(X86CVTTSI2SDRegSIB64, MFR(cctrl, use_reg), -1, -1,
-                           src->reg, src->off);
+          INST(X86CVTTSI2SDRegSIB64, MFR(cctrl, use_reg), -1, -1, src->reg,
+               src->off);
         } else if (src->mode == MD_FRAME && RawTypeIs64(src->raw_type)) {
-          INST(X86CVTTSI2SDRegSIB64, MFR(cctrl, use_reg), -1, -1,
-                           RBP, -src->off);
+          INST(X86CVTTSI2SDRegSIB64, MFR(cctrl, use_reg), -1, -1, RBP,
+               -src->off);
         } /*else if(src->mode==__MD_X86_64_SIB) {
           INST(X86CVTTSI2SDRegSIB64, use_reg, src->__SIB_scale,
         src->reg2, src->reg, src->off);
@@ -1866,11 +1852,11 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         if (src->mode == MD_REG) {
           INST(X86CVTTSD2SIRegReg, MIR(cctrl, use_reg), src->reg);
         } else if (src->mode == MD_INDIR_REG && RawTypeIs64(src->raw_type)) {
-          INST(X86CVTTSD2SIRegSIB64, MIR(cctrl, use_reg), -1, -1,
-                           src->reg, src->off);
+          INST(X86CVTTSD2SIRegSIB64, MIR(cctrl, use_reg), -1, -1, src->reg,
+               src->off);
         } else if (src->mode == MD_FRAME && RawTypeIs64(src->raw_type)) {
-          INST(X86CVTTSD2SIRegSIB64, MIR(cctrl, use_reg), -1, -1,
-                           RBP, -src->off);
+          INST(X86CVTTSD2SIRegSIB64, MIR(cctrl, use_reg), -1, -1, RBP,
+               -src->off);
         } /*else if(src->mode==__MD_X86_64_SIB) {
           INST(X86CVTTSD2SIRegSIB64, use_reg, src->__SIB_scale,
         src->reg2, src->reg, src->off);
@@ -1911,30 +1897,25 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
     case RT_U0:
       break;
     case RT_F64:
-      INST(X86MovIndirRegF64, MFR(cctrl, use_reg), -1, -1, use_reg2,
-                       indir_off);
+      INST(X86MovIndirRegF64, MFR(cctrl, use_reg), -1, -1, use_reg2, indir_off);
       break;
     case RT_U8i:
     case RT_I8i:
-      INST(X86MovIndirRegI8, MIR(cctrl, use_reg), -1, -1, use_reg2,
-                       indir_off);
+      INST(X86MovIndirRegI8, MIR(cctrl, use_reg), -1, -1, use_reg2, indir_off);
       break;
     case RT_U16i:
     case RT_I16i:
-      INST(X86MovIndirRegI16, MIR(cctrl, use_reg), -1, -1, use_reg2,
-                       indir_off);
+      INST(X86MovIndirRegI16, MIR(cctrl, use_reg), -1, -1, use_reg2, indir_off);
       break;
     case RT_U32i:
     case RT_I32i:
-      INST(X86MovIndirRegI32, MIR(cctrl, use_reg), -1, -1, use_reg2,
-                       indir_off);
+      INST(X86MovIndirRegI32, MIR(cctrl, use_reg), -1, -1, use_reg2, indir_off);
       break;
     case RT_U64i:
     case RT_I64i:
     case RT_FUNC: // func ptr
     case RT_PTR:
-      INST(X86MovIndirRegI64, MIR(cctrl, use_reg), -1, -1, use_reg2,
-                       indir_off);
+      INST(X86MovIndirRegI64, MIR(cctrl, use_reg), -1, -1, use_reg2, indir_off);
       break;
     default:
       abort();
@@ -1965,39 +1946,39 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       case RT_U0:
         break;
       case RT_U8i:
-        INST(X86MovZXRegIndirI8, MIR(cctrl, dst->reg),
-                         src->__SIB_scale, src->reg2, src->reg, src->off);
+        INST(X86MovZXRegIndirI8, MIR(cctrl, dst->reg), src->__SIB_scale,
+             src->reg2, src->reg, src->off);
         break;
       case RT_I8i:
-        INST(X86MovSXRegIndirI8, MIR(cctrl, dst->reg),
-                         src->__SIB_scale, src->reg2, src->reg, src->off);
+        INST(X86MovSXRegIndirI8, MIR(cctrl, dst->reg), src->__SIB_scale,
+             src->reg2, src->reg, src->off);
         break;
       case RT_U16i:
-        INST(X86MovZXRegIndirI16, MIR(cctrl, dst->reg),
-                         src->__SIB_scale, src->reg2, src->reg, src->off);
+        INST(X86MovZXRegIndirI16, MIR(cctrl, dst->reg), src->__SIB_scale,
+             src->reg2, src->reg, src->off);
         break;
       case RT_I16i:
-        INST(X86MovSXRegIndirI16, MIR(cctrl, dst->reg),
-                         src->__SIB_scale, src->reg2, src->reg, src->off);
+        INST(X86MovSXRegIndirI16, MIR(cctrl, dst->reg), src->__SIB_scale,
+             src->reg2, src->reg, src->off);
         break;
       case RT_U32i:
-        INST(X86MovRegIndirI32, MIR(cctrl, dst->reg),
-                         src->__SIB_scale, src->reg2, src->reg, src->off);
+        INST(X86MovRegIndirI32, MIR(cctrl, dst->reg), src->__SIB_scale,
+             src->reg2, src->reg, src->off);
         break;
       case RT_I32i:
-        INST(X86MovSXRegIndirI32, MIR(cctrl, dst->reg),
-                         src->__SIB_scale, src->reg2, src->reg, src->off);
+        INST(X86MovSXRegIndirI32, MIR(cctrl, dst->reg), src->__SIB_scale,
+             src->reg2, src->reg, src->off);
         break;
       case RT_U64i:
       case RT_PTR:
       case RT_FUNC:
       case RT_I64i:
-        INST(X86MovRegIndirI64, MIR(cctrl, dst->reg),
-                         src->__SIB_scale, src->reg2, src->reg, src->off);
+        INST(X86MovRegIndirI64, MIR(cctrl, dst->reg), src->__SIB_scale,
+             src->reg2, src->reg, src->off);
         break;
       case RT_F64:
-        INST(X86MovRegIndirF64, MFR(cctrl, dst->reg),
-                         src->__SIB_scale, src->reg2, src->reg, src->off);
+        INST(X86MovRegIndirF64, MFR(cctrl, dst->reg), src->__SIB_scale,
+             src->reg2, src->reg, src->off);
       }
       goto ret;
     } else if (src->mode == MD_CODE_MISC_PTR) {
@@ -2007,39 +1988,31 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       case RT_U0:
         break;
       case RT_U8i:
-        INST(X86MovZXRegIndirI8, MIR(cctrl, dst->reg), -1, -1, RIP,
-                         0);
+        INST(X86MovZXRegIndirI8, MIR(cctrl, dst->reg), -1, -1, RIP, 0);
         break;
       case RT_I8i:
-        INST(X86MovSXRegIndirI8, MIR(cctrl, dst->reg), -1, -1, RIP,
-                         0);
+        INST(X86MovSXRegIndirI8, MIR(cctrl, dst->reg), -1, -1, RIP, 0);
         break;
       case RT_U16i:
-        INST(X86MovZXRegIndirI16, MIR(cctrl, dst->reg), -1, -1, RIP,
-                         0);
+        INST(X86MovZXRegIndirI16, MIR(cctrl, dst->reg), -1, -1, RIP, 0);
         break;
       case RT_I16i:
-        INST(X86MovSXRegIndirI16, MIR(cctrl, dst->reg), -1, -1, RIP,
-                         0);
+        INST(X86MovSXRegIndirI16, MIR(cctrl, dst->reg), -1, -1, RIP, 0);
         break;
       case RT_U32i:
-        INST(X86MovRegIndirI32, MIR(cctrl, dst->reg), -1, -1, RIP,
-                         0);
+        INST(X86MovRegIndirI32, MIR(cctrl, dst->reg), -1, -1, RIP, 0);
         break;
       case RT_I32i:
-        INST(X86MovSXRegIndirI32, MIR(cctrl, dst->reg), -1, -1, RIP,
-                         0);
+        INST(X86MovSXRegIndirI32, MIR(cctrl, dst->reg), -1, -1, RIP, 0);
         break;
       case RT_U64i:
       case RT_PTR:
       case RT_FUNC:
       case RT_I64i:
-        INST(X86MovRegIndirI64, MIR(cctrl, dst->reg), -1, -1, RIP,
-                         0);
+        INST(X86MovRegIndirI64, MIR(cctrl, dst->reg), -1, -1, RIP, 0);
         break;
       case RT_F64:
-        INST(X86MovRegIndirF64, MFR(cctrl, dst->reg), -1, -1, RIP,
-                         0);
+        INST(X86MovRegIndirF64, MFR(cctrl, dst->reg), -1, -1, RIP, 0);
       }
       if (bin)
         CodeMiscAddRef(src->code_misc, bin + code_off - 4);
@@ -2070,47 +2043,39 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         case RT_U0:
           break;
         case RT_U8i:
-          INST(
-              X86MovZXRegIndirI8, MIR(cctrl, dst->reg), -1, -1, RIP,
-              (char *)src->integer - (char *)MemGetExecPtr(bin + code_off));
+          INST(X86MovZXRegIndirI8, MIR(cctrl, dst->reg), -1, -1, RIP,
+               (char *)src->integer - (char *)MemGetExecPtr(bin + code_off));
           break;
         case RT_I8i:
-          INST(
-              X86MovSXRegIndirI8, MIR(cctrl, dst->reg), -1, -1, RIP,
-              (char *)src->integer - (char *)MemGetExecPtr(bin + code_off));
+          INST(X86MovSXRegIndirI8, MIR(cctrl, dst->reg), -1, -1, RIP,
+               (char *)src->integer - (char *)MemGetExecPtr(bin + code_off));
           break;
         case RT_U16i:
-          INST(
-              X86MovZXRegIndirI16, MIR(cctrl, dst->reg), -1, -1, RIP,
-              (char *)src->integer - (char *)MemGetExecPtr(bin + code_off));
+          INST(X86MovZXRegIndirI16, MIR(cctrl, dst->reg), -1, -1, RIP,
+               (char *)src->integer - (char *)MemGetExecPtr(bin + code_off));
           break;
         case RT_I16i:
-          INST(
-              X86MovSXRegIndirI16, MIR(cctrl, dst->reg), -1, -1, RIP,
-              (char *)src->integer - (char *)MemGetExecPtr(bin + code_off));
+          INST(X86MovSXRegIndirI16, MIR(cctrl, dst->reg), -1, -1, RIP,
+               (char *)src->integer - (char *)MemGetExecPtr(bin + code_off));
           break;
         case RT_U32i:
           INST(X86MovRegIndirI32, MIR(cctrl, dst->reg), -1, -1, RIP,
-                           (char *)src->integer -
-                               (char *)MemGetExecPtr(bin + code_off));
+               (char *)src->integer - (char *)MemGetExecPtr(bin + code_off));
           break;
         case RT_I32i:
-          INST(
-              X86MovSXRegIndirI32, MIR(cctrl, dst->reg), -1, -1, RIP,
-              (char *)src->integer - (char *)MemGetExecPtr(bin + code_off));
+          INST(X86MovSXRegIndirI32, MIR(cctrl, dst->reg), -1, -1, RIP,
+               (char *)src->integer - (char *)MemGetExecPtr(bin + code_off));
           break;
         case RT_U64i:
         case RT_PTR:
         case RT_FUNC:
         case RT_I64i:
           INST(X86MovRegIndirI64, MIR(cctrl, dst->reg), -1, -1, RIP,
-                           (char *)src->integer -
-                               (char *)MemGetExecPtr(bin + code_off));
+               (char *)src->integer - (char *)MemGetExecPtr(bin + code_off));
           break;
         case RT_F64:
           INST(X86MovRegIndirF64, MFR(cctrl, dst->reg), -1, -1, RIP,
-                           (char *)src->integer -
-                               (char *)MemGetExecPtr(bin + code_off));
+               (char *)src->integer - (char *)MemGetExecPtr(bin + code_off));
         }
       } else {
         use_reg2 = (cctrl->flags & CCF_ICMOV_NO_USE_RAX)
@@ -2125,39 +2090,39 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
       case RT_U0:
         break;
       case RT_U8i:
-        INST(X86MovZXRegIndirI8, MIR(cctrl, dst->reg), -1, -1,
-                         use_reg2, indir_off);
+        INST(X86MovZXRegIndirI8, MIR(cctrl, dst->reg), -1, -1, use_reg2,
+             indir_off);
         break;
       case RT_I8i:
-        INST(X86MovSXRegIndirI8, MIR(cctrl, dst->reg), -1, -1,
-                         use_reg2, indir_off);
+        INST(X86MovSXRegIndirI8, MIR(cctrl, dst->reg), -1, -1, use_reg2,
+             indir_off);
         break;
       case RT_U16i:
-        INST(X86MovZXRegIndirI16, MIR(cctrl, dst->reg), -1, -1,
-                         use_reg2, indir_off);
+        INST(X86MovZXRegIndirI16, MIR(cctrl, dst->reg), -1, -1, use_reg2,
+             indir_off);
         break;
       case RT_I16i:
-        INST(X86MovSXRegIndirI16, MIR(cctrl, dst->reg), -1, -1,
-                         use_reg2, indir_off);
+        INST(X86MovSXRegIndirI16, MIR(cctrl, dst->reg), -1, -1, use_reg2,
+             indir_off);
         break;
       case RT_U32i:
-        INST(X86MovRegIndirI32, MIR(cctrl, dst->reg), -1, -1,
-                         use_reg2, indir_off);
+        INST(X86MovRegIndirI32, MIR(cctrl, dst->reg), -1, -1, use_reg2,
+             indir_off);
         break;
       case RT_I32i:
-        INST(X86MovSXRegIndirI32, MIR(cctrl, dst->reg), -1, -1,
-                         use_reg2, indir_off);
+        INST(X86MovSXRegIndirI32, MIR(cctrl, dst->reg), -1, -1, use_reg2,
+             indir_off);
         break;
       case RT_U64i:
       case RT_PTR:
       case RT_FUNC:
       case RT_I64i:
-        INST(X86MovRegIndirI64, MIR(cctrl, dst->reg), -1, -1,
-                         use_reg2, indir_off);
+        INST(X86MovRegIndirI64, MIR(cctrl, dst->reg), -1, -1, use_reg2,
+             indir_off);
         break;
       case RT_F64:
-        INST(X86MovRegIndirF64, MFR(cctrl, dst->reg), -1, -1,
-                         use_reg2, indir_off);
+        INST(X86MovRegIndirF64, MFR(cctrl, dst->reg), -1, -1, use_reg2,
+             indir_off);
         break;
       default:
         abort();
@@ -2186,39 +2151,31 @@ int64_t ICMov(CCmpCtrl *cctrl, CICArg *dst, CICArg *src, char *bin,
         case RT_U0:
           break;
         case RT_U8i:
-          INST(X86MovZXRegIndirI8, MIR(cctrl, dst->reg), -1, -1,
-                           RIP, 1000);
+          INST(X86MovZXRegIndirI8, MIR(cctrl, dst->reg), -1, -1, RIP, 1000);
           break;
         case RT_I8i:
-          INST(X86MovSXRegIndirI8, MIR(cctrl, dst->reg), -1, -1,
-                           RIP, 1000);
+          INST(X86MovSXRegIndirI8, MIR(cctrl, dst->reg), -1, -1, RIP, 1000);
           break;
         case RT_U16i:
-          INST(X86MovZXRegIndirI16, MIR(cctrl, dst->reg), -1, -1,
-                           RIP, 1000);
+          INST(X86MovZXRegIndirI16, MIR(cctrl, dst->reg), -1, -1, RIP, 1000);
           break;
         case RT_I16i:
-          INST(X86MovSXRegIndirI16, MIR(cctrl, dst->reg), -1, -1,
-                           RIP, 1000);
+          INST(X86MovSXRegIndirI16, MIR(cctrl, dst->reg), -1, -1, RIP, 1000);
           break;
         case RT_U32i:
-          INST(X86MovRegIndirI32, MIR(cctrl, dst->reg), -1, -1, RIP,
-                           1000);
+          INST(X86MovRegIndirI32, MIR(cctrl, dst->reg), -1, -1, RIP, 1000);
           break;
         case RT_I32i:
-          INST(X86MovSXRegIndirI32, MIR(cctrl, dst->reg), -1, -1,
-                           RIP, 1000);
+          INST(X86MovSXRegIndirI32, MIR(cctrl, dst->reg), -1, -1, RIP, 1000);
           break;
         case RT_U64i:
         case RT_PTR:
         case RT_FUNC:
         case RT_I64i:
-          INST(X86MovRegIndirI64, MIR(cctrl, dst->reg), -1, -1, RIP,
-                           1000);
+          INST(X86MovRegIndirI64, MIR(cctrl, dst->reg), -1, -1, RIP, 1000);
           break;
         case RT_F64:
-          INST(X86MovRegIndirF64, MFR(cctrl, dst->reg), -1, -1, RIP,
-                           1000);
+          INST(X86MovRegIndirF64, MFR(cctrl, dst->reg), -1, -1, RIP, 1000);
         }
         if (bin)
           CodeMiscAddRef(cctrl->statics_label, bin + code_off - 4)->offset =
@@ -2429,8 +2386,8 @@ static int64_t __SexyPreOp(
     } else if (ModeIsDerefToSIB(next)) {
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
                               bin, code_off);
-      INST(incr_sib, sz, derefed.__SIB_scale, derefed.reg2,
-                       derefed.reg, derefed.off);
+      INST(incr_sib, sz, derefed.__SIB_scale, derefed.reg2, derefed.reg,
+           derefed.off);
       code_off = ICMov(cctrl, &rpn->res, &derefed, bin, code_off);
     } else {
       CICArg orig = {0};
@@ -2477,16 +2434,16 @@ static int64_t __SexyPreOp(
                               bin, code_off);
       if (rpn->flags & ICF_LOCK_EXPR)
         INST(X86Lock, 0);
-      INST(i_imm_sib, sz, rpn->integer, derefed.__SIB_scale,
-                       derefed.reg2, derefed.reg, derefed.off);
+      INST(i_imm_sib, sz, rpn->integer, derefed.__SIB_scale, derefed.reg2,
+           derefed.reg, derefed.off);
       code_off = ICMov(cctrl, &rpn->res, &derefed, bin, code_off);
     } else if (ModeIsDerefToSIB(next)) {
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
                               bin, code_off);
       if (rpn->flags & ICF_LOCK_EXPR)
         INST(X86Lock, 0);
-      INST(incr_sib, sz, derefed.__SIB_scale, derefed.reg2,
-                       derefed.reg, derefed.off);
+      INST(incr_sib, sz, derefed.__SIB_scale, derefed.reg2, derefed.reg,
+           derefed.off);
       code_off = ICMov(cctrl, &rpn->res, &derefed, bin, code_off);
     } else {
       CICArg orig = {0};
@@ -2540,25 +2497,25 @@ enter:;
         switch (rpn->res.raw_type) {
         case RT_I8i:
         case RT_U8i:
-          INST(X86AddIndir8Imm32, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AddIndir8Imm32, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         case RT_I16i:
         case RT_U16i:
-          INST(X86AddIndir16Imm32, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AddIndir16Imm32, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         case RT_I32i:
         case RT_U32i:
-          INST(X86AddIndir32Imm32, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AddIndir32Imm32, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         default:
-          INST(X86AddIndir64Imm32, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AddIndir64Imm32, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         }
@@ -2595,23 +2552,23 @@ enter:;
         case RT_U16i:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86AddIndir16Reg, next2->res.reg, dummy.__SIB_scale,
-                           dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AddIndir16Reg, next2->res.reg, dummy.__SIB_scale, dummy.reg2,
+               dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         case RT_I32i:
         case RT_U32i:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86AddIndir32Reg, next2->res.reg, dummy.__SIB_scale,
-                           dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AddIndir32Reg, next2->res.reg, dummy.__SIB_scale, dummy.reg2,
+               dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         default:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86AddIndir64Reg, next2->res.reg, dummy.__SIB_scale,
-                           dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AddIndir64Reg, next2->res.reg, dummy.__SIB_scale, dummy.reg2,
+               dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         }
@@ -2714,25 +2671,25 @@ enter:;
         switch (rpn->res.raw_type) {
         case RT_I8i:
         case RT_U8i:
-          INST(X86SubIndir8Imm32, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86SubIndir8Imm32, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         case RT_I16i:
         case RT_U16i:
-          INST(X86SubIndir16Imm32, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86SubIndir16Imm32, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         case RT_I32i:
         case RT_U32i:
-          INST(X86SubIndir32Imm32, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86SubIndir32Imm32, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         default:
-          INST(X86SubIndir64Imm32, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86SubIndir64Imm32, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         }
@@ -2770,23 +2727,23 @@ enter:;
         case RT_U16i:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86SubIndir16Reg, next2->res.reg, dummy.__SIB_scale,
-                           dummy.reg2, dummy.reg, dummy.off);
+          INST(X86SubIndir16Reg, next2->res.reg, dummy.__SIB_scale, dummy.reg2,
+               dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         case RT_I32i:
         case RT_U32i:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86SubIndir32Reg, next2->res.reg, dummy.__SIB_scale,
-                           dummy.reg2, dummy.reg, dummy.off);
+          INST(X86SubIndir32Reg, next2->res.reg, dummy.__SIB_scale, dummy.reg2,
+               dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         default:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86SubIndir64Reg, next2->res.reg, dummy.__SIB_scale,
-                           dummy.reg2, dummy.reg, dummy.off);
+          INST(X86SubIndir64Reg, next2->res.reg, dummy.__SIB_scale, dummy.reg2,
+               dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         }
@@ -2813,22 +2770,22 @@ enter:;
       switch (rpn->res.raw_type) {
       case RT_I8i:
       case RT_U8i:
-        INST(X86ShlIndirXImm, 1, ConstVal(next2), dummy.__SIB_scale,
-                         dummy.reg2, dummy.reg, dummy.off);
+        INST(X86ShlIndirXImm, 1, ConstVal(next2), dummy.__SIB_scale, dummy.reg2,
+             dummy.reg, dummy.off);
         break;
       case RT_I16i:
       case RT_U16i:
-        INST(X86ShlIndirXImm, 2, ConstVal(next2), dummy.__SIB_scale,
-                         dummy.reg2, dummy.reg, dummy.off);
+        INST(X86ShlIndirXImm, 2, ConstVal(next2), dummy.__SIB_scale, dummy.reg2,
+             dummy.reg, dummy.off);
         break;
       case RT_I32i:
       case RT_U32i:
-        INST(X86ShlIndirXImm, 4, ConstVal(next2), dummy.__SIB_scale,
-                         dummy.reg2, dummy.reg, dummy.off);
+        INST(X86ShlIndirXImm, 4, ConstVal(next2), dummy.__SIB_scale, dummy.reg2,
+             dummy.reg, dummy.off);
         break;
       default:
-        INST(X86ShlIndirXImm, 8, ConstVal(next2), dummy.__SIB_scale,
-                         dummy.reg2, dummy.reg, dummy.off);
+        INST(X86ShlIndirXImm, 8, ConstVal(next2), dummy.__SIB_scale, dummy.reg2,
+             dummy.reg, dummy.off);
       }
       code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
       goto fin;
@@ -2844,36 +2801,36 @@ enter:;
                               code_off);
       switch (rpn->res.raw_type) {
       case RT_I8i:
-        INST(X86SarIndirXImm, 1, ConstVal(next2), dummy.__SIB_scale,
-                         dummy.reg2, dummy.reg, dummy.off);
+        INST(X86SarIndirXImm, 1, ConstVal(next2), dummy.__SIB_scale, dummy.reg2,
+             dummy.reg, dummy.off);
         break;
       case RT_U8i:
-        INST(X86ShrIndirXImm, 1, ConstVal(next2), dummy.__SIB_scale,
-                         dummy.reg2, dummy.reg, dummy.off);
+        INST(X86ShrIndirXImm, 1, ConstVal(next2), dummy.__SIB_scale, dummy.reg2,
+             dummy.reg, dummy.off);
         break;
       case RT_I16i:
-        INST(X86SarIndirXImm, 2, ConstVal(next2), dummy.__SIB_scale,
-                         dummy.reg2, dummy.reg, dummy.off);
+        INST(X86SarIndirXImm, 2, ConstVal(next2), dummy.__SIB_scale, dummy.reg2,
+             dummy.reg, dummy.off);
         break;
       case RT_U16i:
-        INST(X86ShrIndirXImm, 2, ConstVal(next2), dummy.__SIB_scale,
-                         dummy.reg2, dummy.reg, dummy.off);
+        INST(X86ShrIndirXImm, 2, ConstVal(next2), dummy.__SIB_scale, dummy.reg2,
+             dummy.reg, dummy.off);
         break;
       case RT_I32i:
-        INST(X86SarIndirXImm, 4, ConstVal(next2), dummy.__SIB_scale,
-                         dummy.reg2, dummy.reg, dummy.off);
+        INST(X86SarIndirXImm, 4, ConstVal(next2), dummy.__SIB_scale, dummy.reg2,
+             dummy.reg, dummy.off);
         break;
       case RT_U32i:
-        INST(X86ShrIndirXImm, 4, ConstVal(next2), dummy.__SIB_scale,
-                         dummy.reg2, dummy.reg, dummy.off);
+        INST(X86ShrIndirXImm, 4, ConstVal(next2), dummy.__SIB_scale, dummy.reg2,
+             dummy.reg, dummy.off);
         break;
       case RT_I64i:
-        INST(X86SarIndirXImm, 8, ConstVal(next2), dummy.__SIB_scale,
-                         dummy.reg2, dummy.reg, dummy.off);
+        INST(X86SarIndirXImm, 8, ConstVal(next2), dummy.__SIB_scale, dummy.reg2,
+             dummy.reg, dummy.off);
         break;
       case RT_U64i:
-        INST(X86ShrIndirXImm, 8, ConstVal(next2), dummy.__SIB_scale,
-                         dummy.reg2, dummy.reg, dummy.off);
+        INST(X86ShrIndirXImm, 8, ConstVal(next2), dummy.__SIB_scale, dummy.reg2,
+             dummy.reg, dummy.off);
       }
       code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
       goto fin;
@@ -2894,22 +2851,22 @@ enter:;
         switch (rpn->res.raw_type) {
         case RT_I8i:
         case RT_U8i:
-          INST(X86AndIndirXImm, 1, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AndIndirXImm, 1, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           break;
         case RT_I16i:
         case RT_U16i:
-          INST(X86AndIndirXImm, 2, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AndIndirXImm, 2, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           break;
         case RT_I32i:
         case RT_U32i:
-          INST(X86AndIndirXImm, 4, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AndIndirXImm, 4, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           break;
         default:
-          INST(X86AndIndirXImm, 8, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AndIndirXImm, 8, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
         }
         code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
         goto fin;
@@ -2947,23 +2904,23 @@ enter:;
         case RT_U16i:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86AndIndirXReg, 2, next2->res.reg,
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AndIndirXReg, 2, next2->res.reg, dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         case RT_I32i:
         case RT_U32i:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86AndIndirXReg, 4, next2->res.reg,
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AndIndirXReg, 4, next2->res.reg, dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         default:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86AndIndirXReg, 8, next2->res.reg,
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86AndIndirXReg, 8, next2->res.reg, dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         }
@@ -2985,22 +2942,22 @@ enter:;
         switch (rpn->res.raw_type) {
         case RT_I8i:
         case RT_U8i:
-          INST(X86OrIndirXImm, 1, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86OrIndirXImm, 1, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           break;
         case RT_I16i:
         case RT_U16i:
-          INST(X86OrIndirXImm, 2, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86OrIndirXImm, 2, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           break;
         case RT_I32i:
         case RT_U32i:
-          INST(X86OrIndirXImm, 4, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86OrIndirXImm, 4, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           break;
         default:
-          INST(X86OrIndirXImm, 8, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86OrIndirXImm, 8, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
         }
         code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
         goto fin;
@@ -3038,23 +2995,23 @@ enter:;
         case RT_U16i:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86OrIndirXReg, 2, next2->res.reg, dummy.__SIB_scale,
-                           dummy.reg2, dummy.reg, dummy.off);
+          INST(X86OrIndirXReg, 2, next2->res.reg, dummy.__SIB_scale, dummy.reg2,
+               dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         case RT_I32i:
         case RT_U32i:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86OrIndirXReg, 4, next2->res.reg, dummy.__SIB_scale,
-                           dummy.reg2, dummy.reg, dummy.off);
+          INST(X86OrIndirXReg, 4, next2->res.reg, dummy.__SIB_scale, dummy.reg2,
+               dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         default:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86OrIndirXReg, 8, next2->res.reg, dummy.__SIB_scale,
-                           dummy.reg2, dummy.reg, dummy.off);
+          INST(X86OrIndirXReg, 8, next2->res.reg, dummy.__SIB_scale, dummy.reg2,
+               dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         }
@@ -3076,22 +3033,22 @@ enter:;
         switch (rpn->res.raw_type) {
         case RT_I8i:
         case RT_U8i:
-          INST(X86XorIndirXImm, 1, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86XorIndirXImm, 1, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           break;
         case RT_I16i:
         case RT_U16i:
-          INST(X86XorIndirXImm, 2, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86XorIndirXImm, 2, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           break;
         case RT_I32i:
         case RT_U32i:
-          INST(X86XorIndirXImm, 4, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86XorIndirXImm, 4, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           break;
         default:
-          INST(X86XorIndirXImm, 8, ConstVal(next2),
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86XorIndirXImm, 8, ConstVal(next2), dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
         }
         code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
         goto fin;
@@ -3129,23 +3086,23 @@ enter:;
         case RT_U16i:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86XorIndirXReg, 2, next2->res.reg,
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86XorIndirXReg, 2, next2->res.reg, dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         case RT_I32i:
         case RT_U32i:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86XorIndirXReg, 4, next2->res.reg,
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86XorIndirXReg, 4, next2->res.reg, dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         default:
           if (rpn->flags & ICF_LOCK_EXPR)
             INST(X86Lock, 0);
-          INST(X86XorIndirXReg, 8, next2->res.reg,
-                           dummy.__SIB_scale, dummy.reg2, dummy.reg, dummy.off);
+          INST(X86XorIndirXReg, 8, next2->res.reg, dummy.__SIB_scale,
+               dummy.reg2, dummy.reg, dummy.off);
           code_off = ICMov(cctrl, &rpn->res, &dummy, bin, code_off);
           goto fin;
         }
@@ -3272,7 +3229,6 @@ static int64_t __FindPushedFRegs(CCmpCtrl *cctrl, char *to_push) {
   return cctrl->backend_user_data7 = cnt;
 }
 
-
 static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
   char push_ireg[16];
   char push_freg[16];
@@ -3386,8 +3342,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
         PushTmp(cctrl, arg);
         PopTmp(cctrl, arg);
         if (arg->res.mode == MD_REG) {
-          INST(X86LeaSIB, arg->res.reg, -1, -1, RBP,
-                           16 + arg_cnt * 8);
+          INST(X86LeaSIB, arg->res.reg, -1, -1, RBP, 16 + arg_cnt * 8);
         } else {
           INST(X86LeaSIB, 0, -1, -1, RBP, 16 + arg_cnt * 8);
           tmp.reg = 0;
@@ -3534,8 +3489,8 @@ static int64_t __SexyPostOp(
       code_off = ICMov(cctrl, &rpn->res, &derefed, bin, code_off);
       if (rpn->flags & ICF_LOCK_EXPR)
         INST(X86Lock, 0);
-      INST(incr_sib, sz, derefed.__SIB_scale, derefed.reg2,
-                       derefed.reg, derefed.off);
+      INST(incr_sib, sz, derefed.__SIB_scale, derefed.reg2, derefed.reg,
+           derefed.off);
     } else {
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
                               bin, code_off);
@@ -3580,16 +3535,16 @@ static int64_t __SexyPostOp(
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
       if (rpn->flags & ICF_LOCK_EXPR)
         INST(X86Lock, 0);
-      INST(i_imm_sib, sz, rpn->integer, derefed.__SIB_scale,
-                       derefed.reg2, derefed.reg, derefed.off);
+      INST(i_imm_sib, sz, rpn->integer, derefed.__SIB_scale, derefed.reg2,
+           derefed.reg, derefed.off);
     } else if (ModeIsDerefToSIB(next) && rpn->integer == 1) {
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
                               bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &derefed, bin, code_off);
       if (rpn->flags & ICF_LOCK_EXPR)
         INST(X86Lock, 0);
-      INST(incr_sib, sz, derefed.__SIB_scale, derefed.reg2,
-                       derefed.reg, derefed.off);
+      INST(incr_sib, sz, derefed.__SIB_scale, derefed.reg2, derefed.reg,
+           derefed.off);
     } else {
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
                               bin, code_off);
@@ -3979,8 +3934,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     code_off =                                                                 \
         PutICArgIntoReg(cctrl, &b->res, tmp.raw_type, RDX, bin, code_off);     \
     code_off = ICMov(cctrl, &tmp, &a->res, bin, code_off);                     \
-    INST(X86CmpRegReg, into_reg, b->res.reg);                      \
-    INST(OP, MIR(cctrl, into_reg), b->res.reg);                    \
+    INST(X86CmpRegReg, into_reg, b->res.reg);                                  \
+    INST(OP, MIR(cctrl, into_reg), b->res.reg);                                \
     code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);                   \
   }
     IC_MXX_X64(X86CmovbRegReg);
@@ -4074,10 +4029,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       into_reg = 0;
     misc = rpn->code_misc;
     i = -code_off + misc->aot_before_hint;
-    INST(
-        X86MovRegIndirI64, MIR(cctrl, into_reg), -1, -1, RIP,
-        X86MovRegIndirI64(NULL, into_reg, -1, -1, RIP,
-                          0)); // X86MovRegIndirI64 Will return inst length
+    INST(X86MovRegIndirI64, MIR(cctrl, into_reg), -1, -1, RIP,
+         X86MovRegIndirI64(NULL, into_reg, -1, -1, RIP,
+                           0)); // X86MovRegIndirI64 Will return inst length
     CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
     if (rpn->res.mode != MD_REG) {
       tmp.mode = MD_REG;
@@ -4115,29 +4069,29 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         switch (next2->raw_type) {                                             \
         case RT_I8i:                                                           \
         case RT_U8i:                                                           \
-          INST(X86CmpSIB8Imm, next3->integer, tmp.__SIB_scale,     \
-                           tmp.reg2, tmp.reg, tmp.off);                        \
+          INST(X86CmpSIB8Imm, next3->integer, tmp.__SIB_scale, tmp.reg2,       \
+               tmp.reg, tmp.off);                                              \
           break;                                                               \
         case RT_I16i:                                                          \
         case RT_U16i:                                                          \
-          INST(X86CmpSIB16Imm, next3->integer, tmp.__SIB_scale,    \
-                           tmp.reg2, tmp.reg, tmp.off);                        \
+          INST(X86CmpSIB16Imm, next3->integer, tmp.__SIB_scale, tmp.reg2,      \
+               tmp.reg, tmp.off);                                              \
           break;                                                               \
         case RT_I32i:                                                          \
         case RT_U32i:                                                          \
-          INST(X86CmpSIB32Imm, next3->integer, tmp.__SIB_scale,    \
-                           tmp.reg2, tmp.reg, tmp.off);                        \
+          INST(X86CmpSIB32Imm, next3->integer, tmp.__SIB_scale, tmp.reg2,      \
+               tmp.reg, tmp.off);                                              \
           break;                                                               \
         default:                                                               \
-          INST(X86CmpSIB64Imm, next3->integer, tmp.__SIB_scale,    \
-                           tmp.reg2, tmp.reg, tmp.off);                        \
+          INST(X86CmpSIB64Imm, next3->integer, tmp.__SIB_scale, tmp.reg2,      \
+               tmp.reg, tmp.off);                                              \
         }                                                                      \
       } else {                                                                 \
         next2->res.keep_in_tmp = 1;                                            \
         code_off = __OptPassFinal(cctrl, next2, bin, code_off);                \
         code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,                \
                                    AIWNIOS_TMP_IREG_POOP2, bin, code_off);     \
-        INST(X86CmpRegImm, next2->res.reg, next3->integer);        \
+        INST(X86CmpRegImm, next2->res.reg, next3->integer);                    \
       }                                                                        \
     } else if (next3->raw_type == RT_F64 || next2->raw_type == RT_F64) {       \
       code_off = __OptPassFinal(cctrl, next3, bin, code_off);                  \
@@ -4146,23 +4100,23 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
           PutICArgIntoReg(cctrl, &next2->res, RT_F64, 1, bin, code_off);       \
       code_off =                                                               \
           PutICArgIntoReg(cctrl, &next3->res, RT_F64, 0, bin, code_off);       \
-      INST(X86COMISDRegReg, next2->res.reg, next3->res.reg);       \
+      INST(X86COMISDRegReg, next2->res.reg, next3->res.reg);                   \
     } else if (ModeIsDerefToSIB(next3) && RawTypeIs64(next3->res.raw_type)) {  \
       code_off = DerefToICArg(cctrl, &tmp, next3, AIWNIOS_TMP_IREG_POOP, bin,  \
                               code_off);                                       \
       code_off = __OptPassFinal(cctrl, next2, bin, code_off);                  \
       code_off = PutICArgIntoReg(cctrl, &next2->res, RT_I64i,                  \
                                  AIWNIOS_TMP_IREG_POOP2, bin, code_off);       \
-      INST(X86CmpRegSIB64, next2->res.reg, tmp.__SIB_scale,        \
-                       tmp.reg2, tmp.reg, tmp.off);                            \
+      INST(X86CmpRegSIB64, next2->res.reg, tmp.__SIB_scale, tmp.reg2, tmp.reg, \
+           tmp.off);                                                           \
     } else if (ModeIsDerefToSIB(next2) && RawTypeIs64(next2->res.raw_type)) {  \
       code_off = __OptPassFinal(cctrl, next3, bin, code_off);                  \
       code_off = DerefToICArg(cctrl, &tmp, next2, AIWNIOS_TMP_IREG_POOP, bin,  \
                               code_off);                                       \
       code_off = PutICArgIntoReg(cctrl, &next3->res, RT_I64i,                  \
                                  AIWNIOS_TMP_IREG_POOP2, bin, code_off);       \
-      INST(X86CmpSIBReg64, next3->res.reg, tmp.__SIB_scale,        \
-                       tmp.reg2, tmp.reg, tmp.off);                            \
+      INST(X86CmpSIBReg64, next3->res.reg, tmp.__SIB_scale, tmp.reg2, tmp.reg, \
+           tmp.off);                                                           \
     } else {                                                                   \
       code_off = __OptPassFinal(cctrl, next3, bin, code_off);                  \
       code_off = __OptPassFinal(cctrl, next2, bin, code_off);                  \
@@ -4170,9 +4124,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                                  AIWNIOS_TMP_IREG_POOP2, bin, code_off);       \
       code_off = PutICArgIntoReg(cctrl, &next3->res, RT_I64i,                  \
                                  AIWNIOS_TMP_IREG_POOP, bin, code_off);        \
-      INST(X86CmpRegReg, next2->res.reg, next3->res.reg);          \
+      INST(X86CmpRegReg, next2->res.reg, next3->res.reg);                      \
     }                                                                          \
-    INST(X86Jcc, (COND) ^ reverse, 6);                             \
+    INST(X86Jcc, (COND) ^ reverse, 6);                                         \
     CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);                        \
   }
         CMP_AND_JMP(X86_COND_E);
@@ -4327,22 +4281,22 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       switch (tmp.raw_type) {
       case RT_I8i:
       case RT_U8i:
-        INST(X86CmpSIB8Imm, 0, derefed.__SIB_scale, derefed.reg2,
-                         derefed.reg, derefed.off);
+        INST(X86CmpSIB8Imm, 0, derefed.__SIB_scale, derefed.reg2, derefed.reg,
+             derefed.off);
         break;
       case RT_I16i:
       case RT_U16i:
-        INST(X86CmpSIB16Imm, 0, derefed.__SIB_scale, derefed.reg2,
-                         derefed.reg, derefed.off);
+        INST(X86CmpSIB16Imm, 0, derefed.__SIB_scale, derefed.reg2, derefed.reg,
+             derefed.off);
         break;
       case RT_I32i:
       case RT_U32i:
-        INST(X86CmpSIB32Imm, 0, derefed.__SIB_scale, derefed.reg2,
-                         derefed.reg, derefed.off);
+        INST(X86CmpSIB32Imm, 0, derefed.__SIB_scale, derefed.reg2, derefed.reg,
+             derefed.off);
         break;
       default:
-        INST(X86CmpSIB64Imm, 0, derefed.__SIB_scale, derefed.reg2,
-                         derefed.reg, derefed.off);
+        INST(X86CmpSIB64Imm, 0, derefed.__SIB_scale, derefed.reg2, derefed.reg,
+             derefed.off);
         break;
       }
       INST(X86Setcc, X86_COND_E | 1, MIR(cctrl, into_reg));
@@ -4458,8 +4412,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     if (ModeIsDerefToSIB(next)) {
       code_off = DerefToICArg(cctrl, &derefed, next, AIWNIOS_TMP_IREG_POOP2,
                               bin, code_off);
-      INST(X86SqrtSIB, MFR(cctrl, into_reg), derefed.__SIB_scale,
-                       derefed.reg2, derefed.reg, derefed.off);
+      INST(X86SqrtSIB, MFR(cctrl, into_reg), derefed.__SIB_scale, derefed.reg2,
+           derefed.reg, derefed.off);
 
     } else {
       code_off =
@@ -4486,9 +4440,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   tmp.reg = into_reg;                                                          \
   code_off = ICMov(cctrl, &tmp, &next->res, bin, code_off);                    \
   if (rpn->raw_type == RT_F64) {                                               \
-    INST(flt_op, MFR(cctrl, into_reg));                            \
+    INST(flt_op, MFR(cctrl, into_reg));                                        \
   } else                                                                       \
-    INST(int_op, MFR(cctrl, into_reg));                            \
+    INST(int_op, MFR(cctrl, into_reg));                                        \
   rpn->tmp_res = tmp;                                                          \
   if (rpn->res.keep_in_tmp) {                                                  \
     rpn->res = tmp;                                                            \
@@ -4543,7 +4497,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                              code_off);
     } else {
       INST(X86LeaSIB, MIR(cctrl, into_reg), -1, -1, RIP,
-                       0); // X86LeaSIB will return inst size
+           0); // X86LeaSIB will return inst size
       CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
     }
     if (rpn->res.mode != MD_REG) {
@@ -4624,8 +4578,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     INST(X86LeaSIB, MIR(cctrl, RDX), -1, -1, RIP, 0);
     CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
     //-8*rpn->code_misc->lo offsets our tmp.reg by lo
-    INST(X86JmpSIB, 8, MIR(cctrl, tmp.reg), RDX,
-                     -8 * rpn->code_misc->lo);
+    INST(X86JmpSIB, 8, MIR(cctrl, tmp.reg), RDX, -8 * rpn->code_misc->lo);
     break;
   ic_sub_ret:
     INST(X86Ret, 0);
@@ -4646,9 +4599,8 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (rpn->res.__sib_idx_rpn) {
         code_off = __OptPassFinal(cctrl, rpn->res.__sib_idx_rpn, bin, code_off);
       }
-      INST(X86LeaSIB, MIR(cctrl, rpn->res.fallback_reg),
-                       rpn->res.__SIB_scale, rpn->res.reg2, rpn->res.reg,
-                       rpn->res.off);
+      INST(X86LeaSIB, MIR(cctrl, rpn->res.fallback_reg), rpn->res.__SIB_scale,
+           rpn->res.reg2, rpn->res.reg, rpn->res.off);
       tmp.mode = MD_REG;
       tmp.raw_type = RT_I64i;
       tmp.reg = rpn->res.fallback_reg;
@@ -4693,11 +4645,11 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         tmp.reg = into_reg;                                                    \
         code_off = ICMov(cctrl, &tmp, &next->res, bin, code_off);              \
         if (rpn->raw_type == RT_F64) {                                         \
-          INST(f_sib_op, MFR(cctrl, tmp.reg), derefed.__SIB_scale, \
-                           derefed.reg2, derefed.reg, derefed.off);            \
+          INST(f_sib_op, MFR(cctrl, tmp.reg), derefed.__SIB_scale,             \
+               derefed.reg2, derefed.reg, derefed.off);                        \
         } else {                                                               \
-          INST(i_sib_op, MIR(cctrl, tmp.reg), derefed.__SIB_scale, \
-                           derefed.reg2, derefed.reg, derefed.off);            \
+          INST(i_sib_op, MIR(cctrl, tmp.reg), derefed.__SIB_scale,             \
+               derefed.reg2, derefed.reg, derefed.off);                        \
         }                                                                      \
         if (rpn->res.mode != MD_NULL) {                                        \
           code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);             \
@@ -4715,8 +4667,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp.raw_type = rpn->raw_type;                                            \
       tmp.reg = into_reg;                                                      \
       code_off = ICMov(cctrl, &tmp, &next->res, bin, code_off);                \
-      INST(f_sib_op, MFR(cctrl, into_reg), -1, -1, RIP,            \
-                       0xb00b1e5);                                             \
+      INST(f_sib_op, MFR(cctrl, into_reg), -1, -1, RIP, 0xb00b1e5);            \
       misc = GetF64LiteralMisc(cctrl, next2->flt);                             \
       if (bin)                                                                 \
         CodeMiscAddRef(misc, bin + code_off - 4);                              \
@@ -4748,9 +4699,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                                  AIWNIOS_TMP_IREG_POOP2, bin, code_off);       \
     }                                                                          \
     if (rpn->raw_type == RT_F64) {                                             \
-      INST(f_op, MFR(cctrl, tmp.reg), next2->res.reg);             \
+      INST(f_op, MFR(cctrl, tmp.reg), next2->res.reg);                         \
     } else {                                                                   \
-      INST(i_op, MIR(cctrl, tmp.reg), next2->res.reg);             \
+      INST(i_op, MIR(cctrl, tmp.reg), next2->res.reg);                         \
     }                                                                          \
     if (rpn->res.mode != MD_NULL) {                                            \
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);                 \
@@ -4776,13 +4727,13 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       tmp.mode = MD_REG;                                                       \
       tmp.raw_type = rpn->raw_type;                                            \
       code_off = ICMov(cctrl, &tmp, &tmp2, bin, code_off);                     \
-      INST(i_imm_op, MIR(cctrl, into_reg), next2->integer);        \
+      INST(i_imm_op, MIR(cctrl, into_reg), next2->integer);                    \
     } else {                                                                   \
       tmp.mode = MD_REG;                                                       \
       tmp.reg = AIWNIOS_TMP_IREG_POOP;                                         \
       tmp.raw_type = RT_I64i;                                                  \
       code_off = ICMov(cctrl, &tmp, &next2->res, bin, code_off);               \
-      INST(i_op, MIR(cctrl, into_reg), tmp.reg);                   \
+      INST(i_op, MIR(cctrl, into_reg), tmp.reg);                               \
     }                                                                          \
     if (rpn->res.mode != MD_REG && rpn->res.mode != MD_NULL) {                 \
       tmp.raw_type = rpn->raw_type;                                            \
@@ -4899,13 +4850,12 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
             tmp.raw_type = RT_I64i;
             tmp.reg = into_reg;
             code_off = ICMov(cctrl, &tmp, &next2->res, bin, code_off);
-            INST(X86LeaSIB, MIR(cctrl, AIWNIOS_TMP_IREG_POOP), 1,
-                             -1, into_reg, ConstVal(next) - 1);
+            INST(X86LeaSIB, MIR(cctrl, AIWNIOS_TMP_IREG_POOP), 1, -1, into_reg,
+                 ConstVal(next) - 1);
             INST(X86Test, into_reg, into_reg);
-            INST(X86CMovsRegReg, MIR(cctrl, into_reg),
-                             AIWNIOS_TMP_IREG_POOP);
+            INST(X86CMovsRegReg, MIR(cctrl, into_reg), AIWNIOS_TMP_IREG_POOP);
             INST(X86SarImm, MIR(cctrl, into_reg),
-                             __builtin_ffsll(next->integer) - 1);
+                 __builtin_ffsll(next->integer) - 1);
             rpn->res.set_flags = 1;
             rpn->tmp_res = tmp;
             if (rpn->res.keep_in_tmp) {
@@ -4926,7 +4876,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
             tmp.reg = into_reg;
             code_off = ICMov(cctrl, &tmp, &next2->res, bin, code_off);
             INST(X86ShrImm, MIR(cctrl, into_reg),
-                             __builtin_ffsll(next->integer) - 1);
+                 __builtin_ffsll(next->integer) - 1);
             if (rpn->raw_type != RT_F64)
               rpn->res.set_flags = 1;
             break;
@@ -4957,14 +4907,13 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     tmp.mode = MD_REG;                                                         \
     code_off = ICMov(cctrl, &tmp, &next->res, bin, code_off);                  \
     if (rpn->raw_type == RT_U64i) {                                            \
-      INST(X86XorReg, MIR(cctrl, RDX), RDX);                       \
+      INST(X86XorReg, MIR(cctrl, RDX), RDX);                                   \
     } else {                                                                   \
       MIR(cctrl, RAX);                                                         \
       MIR(cctrl, RDX);                                                         \
-      INST(X86Cqo, 0);                                             \
+      INST(X86Cqo, 0);                                                         \
     }                                                                          \
-    INST(sib_op, derefed.__SIB_scale, derefed.reg2, derefed.reg,   \
-                     derefed.off);                                             \
+    INST(sib_op, derefed.__SIB_scale, derefed.reg2, derefed.reg, derefed.off); \
     tmp.reg = use_reg;                                                         \
     rpn->tmp_res = tmp;                                                        \
     if (rpn->res.keep_in_tmp) {                                                \
@@ -4982,13 +4931,13 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   code_off = ICMov(cctrl, &tmp, &next->res, bin, code_off);                    \
   code_off = PutICArgIntoReg(cctrl, &next2->res, RT_U64i, R8, bin, code_off);  \
   if (rpn->raw_type == RT_U64i) {                                              \
-    INST(X86XorReg, MIR(cctrl, RDX), RDX);                         \
+    INST(X86XorReg, MIR(cctrl, RDX), RDX);                                     \
   } else {                                                                     \
     MIR(cctrl, RAX);                                                           \
     MIR(cctrl, RDX);                                                           \
-    INST(X86Cqo, 0);                                               \
+    INST(X86Cqo, 0);                                                           \
   }                                                                            \
-  INST(op, next2->res.reg);                                        \
+  INST(op, next2->res.reg);                                                    \
   tmp.reg = use_reg;                                                           \
   rpn->tmp_res = tmp;                                                          \
   if (rpn->res.keep_in_tmp) {                                                  \
@@ -5015,14 +4964,14 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         if (rpn->res.mode == MD_REG) {
           code_off = ICMov(cctrl, &rpn->res, &next2->res, bin, code_off);
           INST(X86ShlImm, MIR(cctrl, rpn->res.reg),
-                           __builtin_ffsll(next->integer) - 1);
+               __builtin_ffsll(next->integer) - 1);
         } else {
           tmp.raw_type = RT_I64i;
           tmp.reg = RAX;
           tmp.mode = MD_REG;
           code_off = ICMov(cctrl, &tmp, &next2->res, bin, code_off);
           INST(X86ShlImm, MIR(cctrl, tmp.reg),
-                           __builtin_ffsll(next->integer) - 1);
+               __builtin_ffsll(next->integer) - 1);
           rpn->tmp_res = tmp;
           if (rpn->res.keep_in_tmp) {
             rpn->res = tmp;
@@ -5102,8 +5051,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         into_reg = rpn->res.reg;
       else
         into_reg = 0;
-      INST(X86LeaSIB, MIR(cctrl, into_reg), -1, -1, RBP,
-                       -next->integer);
+      INST(X86LeaSIB, MIR(cctrl, into_reg), -1, -1, RBP, -next->integer);
       goto restore_reg;
       break;
     case IC_STATIC:
@@ -5112,7 +5060,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       else
         into_reg = 0;
       INST(X86LeaSIB, MIR(cctrl, into_reg), -1, -1, RIP,
-                       (char *)rpn->integer - (char *)(bin + code_off));
+           (char *)rpn->integer - (char *)(bin + code_off));
       goto restore_reg;
     case IC_GLOBAL:
     get_glbl_ptr:
@@ -5129,15 +5077,14 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       // Undefined?
       if (!enter_addr || enter_addr == &DoNothing) {
         misc = AddRelocMisc(cctrl, next->global_var->base.str);
-        INST(
-            X86MovRegIndirI64, MIR(cctrl, into_reg), -1, -1, RIP,
-            X86MovRegIndirI64(NULL, into_reg, -1, -1, RIP,
-                              0)); // X86MovRegIndirI64 will return inst size
+        INST(X86MovRegIndirI64, MIR(cctrl, into_reg), -1, -1, RIP,
+             X86MovRegIndirI64(NULL, into_reg, -1, -1, RIP,
+                               0)); // X86MovRegIndirI64 will return inst size
         CodeMiscAddRef(misc, bin + code_off - 4);
         goto restore_reg;
       } else if (Is32Bit(enter_addr - (char *)MemGetExecPtr(bin + code_off))) {
         INST(X86LeaSIB, MIR(cctrl, into_reg), -1, -1, RIP,
-                         enter_addr - (char *)MemGetExecPtr(bin + code_off));
+             enter_addr - (char *)MemGetExecPtr(bin + code_off));
         goto restore_reg;
       }
       code_off =
@@ -5178,18 +5125,15 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
             INST(X86Jcc, X86_COND_S, 0xffff);
             reverse = code_off;
             INST(X86AndImm, MIR(cctrl, rpn->res.reg),
-                             (1ll << (__builtin_ffsll(ConstVal(next2)) - 1)) -
-                                 1);
+                 (1ll << (__builtin_ffsll(ConstVal(next2)) - 1)) - 1);
             INST(X86Jmp, 0xffff);
             j1 = code_off;
             if (bin)
               *(int32_t *)(bin + reverse - 4) = code_off - reverse;
             INST(X86AndImm, MIR(cctrl, rpn->res.reg),
-                             (1ll << (__builtin_ffsll(ConstVal(next2)) - 1)) -
-                                 1);
-            INST(
-                X86OrImm, MIR(cctrl, rpn->res.reg),
-                ~((1ll << (__builtin_ffsll(ConstVal(next2)) - 1)) - 1));
+                 (1ll << (__builtin_ffsll(ConstVal(next2)) - 1)) - 1);
+            INST(X86OrImm, MIR(cctrl, rpn->res.reg),
+                 ~((1ll << (__builtin_ffsll(ConstVal(next2)) - 1)) - 1));
             if (bin)
               *(int32_t *)(bin + j1 - 4) = code_off - j1;
             code_off = ICMov(cctrl, &orig_dst, &rpn->res, bin, code_off);
@@ -5206,8 +5150,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
             code_off = PutICArgIntoReg(cctrl, &rpn->res, RT_I64i,
                                        AIWNIOS_TMP_IREG_POOP, bin, code_off);
             INST(X86AndImm, MIR(cctrl, rpn->res.reg),
-                             (1ll << (__builtin_ffsll(ConstVal(next2)) - 1)) -
-                                 1);
+                 (1ll << (__builtin_ffsll(ConstVal(next2)) - 1)) - 1);
             code_off = ICMov(cctrl, &orig_dst, &rpn->res, bin, code_off);
             break;
           }
@@ -5350,7 +5293,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       }
       range_fail_addrs[i] = bin + code_off;
       INST(X86Jcc, range_cmp_types[i],
-                       0); // WILL BE FILLED IN LATER
+           0); // WILL BE FILLED IN LATER
       if (old_fail_misc)
         CodeMiscAddRef(old_fail_misc, bin + code_off - 4);
       next = next2;
@@ -5468,10 +5411,10 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     code_off = PutICArgIntoReg(cctrl, (_res), rt, 0, bin, code_off);           \
     int64_t reg = (_res)->reg;                                                 \
     if ((rt) != RT_F64) {                                                      \
-      INST(X86Test, reg, reg);                                     \
+      INST(X86Test, reg, reg);                                                 \
     } else {                                                                   \
       code_off = __ICMoveF64(cctrl, 2, 0, bin, code_off);                      \
-      INST(X86COMISDRegReg, reg, 2);                               \
+      INST(X86COMISDRegReg, reg, 2);                                           \
     }                                                                          \
   }
     if (old_pass_misc && old_fail_misc) {
@@ -5495,12 +5438,12 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     }
 #define BACKEND_BOOLIFY(to, reg, rt)                                           \
   if ((rt) != RT_F64) {                                                        \
-    INST(X86Test, reg, reg);                                       \
-    INST(X86Setcc, X86_COND_Z | 1, MIR(cctrl, to));                \
+    INST(X86Test, reg, reg);                                                   \
+    INST(X86Setcc, X86_COND_Z | 1, MIR(cctrl, to));                            \
   } else {                                                                     \
     code_off = __ICMoveF64(cctrl, 2, 0, bin, code_off);                        \
-    INST(X86COMISDRegReg, reg, 2);                                 \
-    INST(X86Setcc, X86_COND_E | 1, MIR(cctrl, to));                \
+    INST(X86COMISDRegReg, reg, 2);                                             \
+    INST(X86Setcc, X86_COND_E | 1, MIR(cctrl, to));                            \
   }
     if (!rpn->code_misc)
       rpn->code_misc = CodeMiscNew(cctrl, CMT_LABEL);
@@ -5603,7 +5546,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                              AIWNIOS_TMP_IREG_POOP, bin, code_off);            \
   BACKEND_BOOLIFY(AIWNIOS_TMP_IREG_POOP2, next->res.reg, next->res.raw_type);  \
   BACKEND_BOOLIFY(into_reg, next2->res.reg, next2->res.raw_type);              \
-  INST(op, MIR(cctrl, into_reg), AIWNIOS_TMP_IREG_POOP2);          \
+  INST(op, MIR(cctrl, into_reg), AIWNIOS_TMP_IREG_POOP2);                      \
   if (rpn->res.mode != MD_REG) {                                               \
     tmp.raw_type = rpn->raw_type;                                              \
     tmp.reg = 0;                                                               \
@@ -5626,9 +5569,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                              code_off);                                        \
   code_off = PutICArgIntoReg(cctrl, &next->res, i, 0, bin, code_off);          \
   if (i == RT_F64) {                                                           \
-    INST(X86COMISDRegReg, next->res.reg, next2->res.reg);          \
+    INST(X86COMISDRegReg, next->res.reg, next2->res.reg);                      \
   } else {                                                                     \
-    INST(X86CmpRegReg, next->res.reg, next2->res.reg);             \
+    INST(X86CmpRegReg, next->res.reg, next2->res.reg);                         \
   }
     BACKEND_CMP;
     if (old_pass_misc && old_fail_misc) {
@@ -6010,17 +5953,17 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
         a->res.reg2 = a->res.__sib_idx_rpn->res.reg;                           \
       }                                                                        \
       if (lock)                                                                \
-        INST(X86Lock, 0);                                          \
-      INST(f_imm_sib, ConstVal(b), a->res.__SIB_scale,             \
-                       a->res.reg2, a->res.reg, a->res.off);                   \
+        INST(X86Lock, 0);                                                      \
+      INST(f_imm_sib, ConstVal(b), a->res.__SIB_scale, a->res.reg2,            \
+           a->res.reg, a->res.off);                                            \
     } else {                                                                   \
       a->res.keep_in_tmp = 1;                                                  \
       code_off = __OptPassFinal(cctrl, a, bin, code_off);                      \
       code_off = PutICArgIntoReg(cctrl, &a->res, RT_I64i,                      \
                                  AIWNIOS_TMP_IREG_POOP2, bin, code_off);       \
       if (lock)                                                                \
-        INST(X86Lock, 0);                                          \
-      INST(f_imm_sib, ConstVal(b), -1, -1, a->res.reg, 0);         \
+        INST(X86Lock, 0);                                                      \
+      INST(f_imm_sib, ConstVal(b), -1, -1, a->res.reg, 0);                     \
     }                                                                          \
   } else {                                                                     \
     code_off = __OptPassFinal(cctrl, b, bin, code_off);                        \
@@ -6037,9 +5980,9 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       code_off = PutICArgIntoReg(cctrl, &b->res, RT_I64i,                      \
                                  AIWNIOS_TMP_IREG_POOP, bin, code_off);        \
       if (lock)                                                                \
-        INST(X86Lock, 0);                                          \
-      INST(f_sib, MFR(cctrl, b->res.reg), a->res.__SIB_scale,      \
-                       a->res.reg2, a->res.reg, a->res.off);                   \
+        INST(X86Lock, 0);                                                      \
+      INST(f_sib, MFR(cctrl, b->res.reg), a->res.__SIB_scale, a->res.reg2,     \
+           a->res.reg, a->res.off);                                            \
     } else {                                                                   \
       code_off = __OptPassFinal(cctrl, a, bin, code_off);                      \
       code_off = PutICArgIntoReg(cctrl, &a->res, RT_I64i,                      \
@@ -6047,14 +5990,14 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       code_off = PutICArgIntoReg(cctrl, &b->res, RT_I64i,                      \
                                  AIWNIOS_TMP_IREG_POOP, bin, code_off);        \
       if (lock)                                                                \
-        INST(X86Lock, 0);                                          \
-      INST(f_sib, MIR(cctrl, b->res.reg), -1, -1, a->res.reg, 0);  \
+        INST(X86Lock, 0);                                                      \
+      INST(f_sib, MIR(cctrl, b->res.reg), -1, -1, a->res.reg, 0);              \
     }                                                                          \
   }                                                                            \
   if (old_fail_misc && old_pass_misc) {                                        \
-    INST(X86Jcc, X86_COND_C, 0);                                   \
+    INST(X86Jcc, X86_COND_C, 0);                                               \
     CodeMiscAddRef(old_pass_misc, bin + code_off - 4);                         \
-    INST(X86Jmp, 0);                                               \
+    INST(X86Jmp, 0);                                                           \
     CodeMiscAddRef(old_fail_misc, bin + code_off - 4);                         \
     goto ret;                                                                  \
   }                                                                            \
@@ -6062,7 +6005,7 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     into_reg = 0;                                                              \
     if (rpn->res.mode == MD_REG)                                               \
       into_reg = rpn->res.reg;                                                 \
-    INST(X86Setcc, X86_COND_C, MIR(cctrl, into_reg));              \
+    INST(X86Setcc, X86_COND_C, MIR(cctrl, into_reg));                          \
     goto restore_reg;                                                          \
   }
     BTX_OP(0, X86BtSIBImm, X86BtRegImm, X86BtSIBReg, X86BtRegReg);

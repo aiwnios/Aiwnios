@@ -15,8 +15,8 @@
 #  define _WIN32_WINNT 0x0602 /* [2] (GetProcessMitigationPolicy) */
 #  include <windows.h>
 #  include <memoryapi.h>
-#  include <sysinfoapi.h>
 #  include <processthreadsapi.h>
+#  include <sysinfoapi.h>
 #else
 #  include <fcntl.h>
 #  include <sys/mman.h>
@@ -987,7 +987,7 @@ void HeapCtrlDel(CHeapCtrl *ct) {
 #if (defined(_WIN32) || defined(WIN32)) && !defined(USE_BYTECODE)
     VirtualFree(m, 0, MEM_RELEASE);
 #elif !(defined(_WIN32) || defined(WIN32)) && !defined(USE_BYTECODE)
-    static int64_t ps;	
+    static int64_t ps;
     int64_t b;
     if (!ps)
       ps = sysconf(_SC_PAGE_SIZE);
@@ -1017,7 +1017,7 @@ char *__AIWNIOS_StrDup(char *str, void *t) {
   return ret;
 }
 
-#if defined(_WIN64) 
+#if defined(_WIN64)
 int64_t IsValidPtr(char *chk) {
   MEMORY_BASIC_INFORMATION mbi;
   if (!VirtualQuery(chk, &mbi, sizeof mbi))
@@ -1028,9 +1028,9 @@ int64_t IsValidPtr(char *chk) {
        PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY);
   return !!(mbi.Protect & mask);
 }
-#endif 
+#endif
 
-#if defined(_WIN64) || defined(_WIN32) 
+#if defined(_WIN64) || defined(_WIN32)
 #  define MEM MEM_RESERVE | MEM_COMMIT
 #  define VALLOC(addr, sz, memflags, pagflags)                                 \
     VirtualAlloc((void *)addr, sz, memflags, pagflags)

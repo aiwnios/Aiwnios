@@ -291,8 +291,19 @@ public U0 Uf(U8 *st)
     if (dbg_info=tmpf->dbg_info) {
       i=dbg_info->body[dbg_info->max_line+1-dbg_info->min_line];
       ptr=dbg_info->body[0];
-      while(ptr<i)
-        ptr=DisasOpc(DocPut,ptr);
+      if (IsCmdLineMode) {
+	CDoc *doc;
+	while(ptr<i) {
+          doc=DocNew;
+	  ptr=DisasOpc(doc,ptr);
+	  DocDump(doc);
+	  DocDel(doc);
+          "\n";
+        }
+      } else {
+	while(ptr<i)
+	  ptr=DisasOpc(DocPut,ptr);
+      }
       "Code Size:%04X\n",i-dbg_info->body[0](U8*);
     } else
       ;//U(HashVal(tmpf));

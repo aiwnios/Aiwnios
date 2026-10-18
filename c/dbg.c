@@ -44,7 +44,7 @@ void InstallDbgSignalsForThread() {
 #  define DBG_MSG_SET_GREG "%p:%d,SGREG,%p,%p\n" //(task,pid,which_reg,value)
 #  define DBG_MSG_WATCH_TID                                                    \
     "0:0,WATCHTID,%d\n" //(tid,aiwnios is a Godsend,it will send you a message
-                        //for
+                        // for
                         // the important TIDs(cores))
 #  define DBG_MSG_OK "OK"
 #  if defined(__OpenBSD__) || defined(__NetBSD__) || defined(__linux__) ||     \
@@ -757,6 +757,11 @@ static void UnblockSignals() {
 #  if defined(__OpenBSD__)
 static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   UnblockSignals();
+  if (sig == SIGFPE) {
+    int64_t c;
+    memcpy(&c, "DivZero", 8);
+    throw(c);
+  }
   CHashExport *exp;
   // OpenBSD doesnt put anything juicy in the __ctx ,do man 2 sigaction
   void *fp;
@@ -780,12 +785,15 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
 #    endif
 static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   ucontext_t *_ctx = __ctx;
+  UnblockSignals();
   if (sig == SIGWINCH) {
-    UnblockSignals();
     return;
+  } else if (sig == SIGFPE) {
+    int64_t c;
+    memcpy(&c, "DivZero", 8);
+    throw(c);
   }
 #    if defined(USE_BYTECODE)
-  UnblockSignals();
   AiwnBCDbgFault(sig);
   return;
 #    elif defined(__x86_64__)
@@ -810,7 +818,6 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
     REG_RSP,
     REG_RIP,
   };
-  UnblockSignals();
   mcontext_t *ctx = &_ctx->uc_mcontext;
   int64_t actx[32];
   actx[0] = ctx->gregs[REG_RIP];
@@ -832,7 +839,6 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
     abort();
   return; // returning calls setcontext
 #      elif defined(__NetBSD__)
-  UnblockSignals();
   mcontext_t *ctx = &_ctx->uc_mcontext;
   int64_t actx[32];
   actx[0] = ctx->__gregs[_REG_RIP];
@@ -854,7 +860,6 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
     abort();
   return;
 #      elif defined(__FreeBSD__)
-  UnblockSignals();
   mcontext_t *ctx = &_ctx->uc_mcontext;
   int64_t actx[32];
   actx[0] = ctx->mc_rip;
@@ -888,7 +893,6 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
   int64_t (*fp)(int64_t sig, int64_t *ctx), (*fp2)();
   int64_t actx[(30 - 18 + 1) + (15 - 8 + 1) + 1];
   int64_t i, i2, sz, fp_idx;
-  UnblockSignals();
   for (i = 18; i <= 30; i++)
     if (i - 18 != 12) // the 12th one is the return register
 #      if defined(__linux__)
@@ -952,7 +956,6 @@ static void SigHandler(int sig, siginfo_t *info, void *__ctx) {
     abort();
 #    endif
 #    if (defined(__riscv__) || defined(__riscv)) && defined(__linux__)
-  UnblockSignals();
   CHashExport *exp;
   void *fp;
   int64_t actx[64];

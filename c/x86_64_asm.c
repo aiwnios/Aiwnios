@@ -1,12 +1,13 @@
-#include "aiwn_x86.h"
 #include "aiwn_lexparser.h"
+#include "aiwn_x86.h"
 
 uint8_t ErectREX(int64_t big, int64_t reg, int64_t index, int64_t base) {
   if (index == -1)
     index = 0;
   if (base == -1)
     base = 0;
-  return 0b01000000 | (big << 3) | (!!(reg & 0b1000) << 2) | (!!(index & 0b1000) << 1) | !!(base & 0b1000);
+  return 0b01000000 | (big << 3) | (!!(reg & 0b1000) << 2) |
+         (!!(index & 0b1000) << 1) | !!(base & 0b1000);
 }
 
 int64_t Is32Bit(int64_t num) {
@@ -80,7 +81,8 @@ int64_t X86CmovgRegReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86CmpSIB64Imm(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86CmpSIB64Imm(char *to, int64_t imm, int64_t s, int64_t i, int64_t b,
+                       int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -92,7 +94,8 @@ int64_t X86CmpSIB64Imm(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, i
   return len;
 }
 
-int64_t X86CmpSIB32Imm(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86CmpSIB32Imm(char *to, int64_t imm, int64_t s, int64_t i, int64_t b,
+                       int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -104,7 +107,8 @@ int64_t X86CmpSIB32Imm(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, i
   return len;
 }
 
-int64_t X86CmpSIB16Imm(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86CmpSIB16Imm(char *to, int64_t imm, int64_t s, int64_t i, int64_t b,
+                       int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -117,7 +121,8 @@ int64_t X86CmpSIB16Imm(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, i
   return len;
 }
 
-int64_t X86CmpSIB8Imm(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86CmpSIB8Imm(char *to, int64_t imm, int64_t s, int64_t i, int64_t b,
+                      int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -217,7 +222,8 @@ int64_t X86MovImm(char *to, int64_t a, int64_t off) {
   return len;
 }
 
-int64_t X86AddIndir64Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86AddIndir64Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                         int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -227,7 +233,8 @@ int64_t X86AddIndir64Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, i
   SIB_END();
   return len;
 }
-int64_t X86AddIndir16Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86AddIndir16Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                         int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -239,7 +246,8 @@ int64_t X86AddIndir16Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, i
   return len;
 }
 
-int64_t X86AddIndir32Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86AddIndir32Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                         int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -275,7 +283,8 @@ int64_t X86AddImm32(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86AddIndir64Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86AddIndir64Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                           int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -286,7 +295,8 @@ int64_t X86AddIndir64Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t 
   ADD_U32(imm);
   return len;
 }
-int64_t X86AddIndir32Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86AddIndir32Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                           int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -297,7 +307,8 @@ int64_t X86AddIndir32Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t 
   ADD_U32(imm);
   return len;
 }
-int64_t X86AddIndir16Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86AddIndir16Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                           int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -309,7 +320,8 @@ int64_t X86AddIndir16Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t 
   ADD_U16(imm);
   return len;
 }
-int64_t X86AddIndir8Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86AddIndir8Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                          int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -321,7 +333,8 @@ int64_t X86AddIndir8Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t b
   return len;
 }
 //
-int64_t X86SubIndir64Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86SubIndir64Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                           int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -332,7 +345,8 @@ int64_t X86SubIndir64Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t 
   ADD_U32(imm);
   return len;
 }
-int64_t X86SubIndir32Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86SubIndir32Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                           int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -343,7 +357,8 @@ int64_t X86SubIndir32Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t 
   ADD_U32(imm);
   return len;
 }
-int64_t X86SubIndir16Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86SubIndir16Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                           int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -355,7 +370,8 @@ int64_t X86SubIndir16Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t 
   ADD_U16(imm);
   return len;
 }
-int64_t X86SubIndir8Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86SubIndir8Imm32(char *to, int64_t imm, int64_t s, int64_t i,
+                          int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -367,7 +383,8 @@ int64_t X86SubIndir8Imm32(char *to, int64_t imm, int64_t s, int64_t i, int64_t b
   return len;
 }
 //
-int64_t X86SubIndir64Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86SubIndir64Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                         int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -377,7 +394,8 @@ int64_t X86SubIndir64Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, i
   SIB_END();
   return len;
 }
-int64_t X86SubIndir16Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86SubIndir16Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                         int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -389,7 +407,8 @@ int64_t X86SubIndir16Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, i
   return len;
 }
 
-int64_t X86SubIndir32Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86SubIndir32Reg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                         int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -434,7 +453,8 @@ int64_t X86AddReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86AddSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86AddSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                    int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -445,7 +465,8 @@ int64_t X86AddSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_
   return len;
 }
 
-int64_t X86SubSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86SubSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                    int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -500,7 +521,8 @@ int64_t X86DecSIB64(char *to, int64_t s, int64_t i, int64_t b, int64_t off) {
   return len;
 }
 
-int64_t X86CVTTSD2SIRegSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86CVTTSD2SIRegSIB64(char *to, int64_t a, int64_t s, int64_t i,
+                             int64_t b, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -539,7 +561,8 @@ int64_t X86CVTTSI2SDRegReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86CVTTSI2SDRegSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86CVTTSI2SDRegSIB64(char *to, int64_t a, int64_t s, int64_t i,
+                             int64_t b, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -566,7 +589,8 @@ int64_t X86AndPDReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86AndPDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86AndPDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                      int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -593,7 +617,8 @@ int64_t X86OrPDReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86OrPDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86OrPDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                     int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -620,7 +645,8 @@ int64_t X86XorPDReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86XorPDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86XorPDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                      int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -672,7 +698,8 @@ int64_t X86AddSDReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86AddSDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86AddSDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                      int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -699,7 +726,8 @@ int64_t X86SubSDReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86SubSDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86SubSDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                      int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -727,7 +755,8 @@ int64_t X86RoundSD(char *to, int64_t a, int64_t b, int64_t mode) {
   return len;
 }
 
-int64_t X86SqrtSIB(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86SqrtSIB(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                   int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -767,7 +796,8 @@ int64_t X86MulSDReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86MulSDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86MulSDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                      int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -794,7 +824,8 @@ int64_t X86DivSDReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86DivSDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86DivSDSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                      int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -830,7 +861,8 @@ int64_t X86AndImm(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86AndSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86AndSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                    int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -852,7 +884,8 @@ int64_t X86OrReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86OrSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86OrSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                   int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -886,7 +919,8 @@ int64_t X86XorReg(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86XorSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86XorSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                    int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1119,7 +1153,8 @@ int64_t X86IMul2RegImm(char *to, int64_t a, int64_t b, int64_t imm8) {
   return len;
 }
 
-int64_t X86IMul2SIB64(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86IMul2SIB64(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                      int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1226,7 +1261,8 @@ int64_t X86PopReg(char *to, int64_t reg) {
   return len;
 }
 
-int64_t X86CmpRegSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86CmpRegSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                       int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1237,7 +1273,8 @@ int64_t X86CmpRegSIB64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int
   return len;
 }
 
-int64_t X86CmpSIBReg64(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86CmpSIBReg64(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                       int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1261,7 +1298,8 @@ int64_t X86MovQF64I64(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86LeaSIB(char *to, int64_t a, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86LeaSIB(char *to, int64_t a, int64_t s, int64_t i, int64_t b,
+                  int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1295,7 +1333,8 @@ int64_t X86Jmp(char *to, int64_t off) {
   return len;
 }
 
-int64_t X86JmpSIB(char *to, int64_t scale, int64_t idx, int64_t base, int64_t off) {
+int64_t X86JmpSIB(char *to, int64_t scale, int64_t idx, int64_t base,
+                  int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1377,7 +1416,8 @@ int64_t X86MovRegRegF64(char *to, int64_t a, int64_t b) {
   return len;
 }
 
-int64_t X86MovIndirRegF64(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovIndirRegF64(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1389,7 +1429,8 @@ int64_t X86MovIndirRegF64(char *to, int64_t reg, int64_t scale, int64_t index, i
   SIB_END();
   return len;
 }
-int64_t X86MovRegIndirF64(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovRegIndirF64(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1402,7 +1443,8 @@ int64_t X86MovRegIndirF64(char *to, int64_t reg, int64_t scale, int64_t index, i
   return len;
 }
 
-int64_t X86MovRegIndirDQU(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovRegIndirDQU(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1414,7 +1456,8 @@ int64_t X86MovRegIndirDQU(char *to, int64_t reg, int64_t scale, int64_t index, i
   SIB_END();
   return len;
 }
-int64_t X86MovIndirRegDQU(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovIndirRegDQU(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1479,7 +1522,8 @@ int64_t X86UnpcklpdRegReg(char *to, int64_t a, int64_t b) {
   ADD_U8(MODRMRegReg(a, b));
   return len;
 }
-int64_t X86MovUPDRegSIB128(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovUPDRegSIB128(char *to, int64_t reg, int64_t scale, int64_t index,
+                           int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1491,7 +1535,8 @@ int64_t X86MovUPDRegSIB128(char *to, int64_t reg, int64_t scale, int64_t index, 
   SIB_END();
   return len;
 }
-int64_t X86MovUPDSIBReg128(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovUPDSIBReg128(char *to, int64_t reg, int64_t scale, int64_t index,
+                           int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1504,7 +1549,8 @@ int64_t X86MovUPDSIBReg128(char *to, int64_t reg, int64_t scale, int64_t index, 
   return len;
 }
 
-int64_t X86MovRegIndirI64(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovRegIndirI64(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1515,7 +1561,8 @@ int64_t X86MovRegIndirI64(char *to, int64_t reg, int64_t scale, int64_t index, i
   return len;
 }
 
-int64_t X86MovIndirI8Imm(char *to, int64_t imm, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovIndirI8Imm(char *to, int64_t imm, int64_t scale, int64_t index,
+                         int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1527,7 +1574,8 @@ int64_t X86MovIndirI8Imm(char *to, int64_t imm, int64_t scale, int64_t index, in
   return len;
 }
 
-int64_t X86MovIndirI16Imm(char *to, int64_t imm, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovIndirI16Imm(char *to, int64_t imm, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1540,7 +1588,8 @@ int64_t X86MovIndirI16Imm(char *to, int64_t imm, int64_t scale, int64_t index, i
   return len;
 }
 
-int64_t X86MovIndirI32Imm(char *to, int64_t imm, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovIndirI32Imm(char *to, int64_t imm, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1552,7 +1601,8 @@ int64_t X86MovIndirI32Imm(char *to, int64_t imm, int64_t scale, int64_t index, i
   return len;
 }
 
-int64_t X86MovIndirI64Imm(char *to, int64_t imm, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovIndirI64Imm(char *to, int64_t imm, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1564,7 +1614,8 @@ int64_t X86MovIndirI64Imm(char *to, int64_t imm, int64_t scale, int64_t index, i
   return len;
 }
 
-int64_t X86MovIndirRegI64(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovIndirRegI64(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1575,7 +1626,8 @@ int64_t X86MovIndirRegI64(char *to, int64_t reg, int64_t scale, int64_t index, i
   return len;
 }
 
-int64_t X86XChgIndirReg32(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86XChgIndirReg32(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1586,7 +1638,8 @@ int64_t X86XChgIndirReg32(char *to, int64_t reg, int64_t scale, int64_t index, i
   return len;
 }
 
-int64_t X86XChgIndirReg8(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86XChgIndirReg8(char *to, int64_t reg, int64_t scale, int64_t index,
+                         int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1597,7 +1650,8 @@ int64_t X86XChgIndirReg8(char *to, int64_t reg, int64_t scale, int64_t index, in
   return len;
 }
 
-int64_t X86XChgIndirReg16(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86XChgIndirReg16(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1609,7 +1663,8 @@ int64_t X86XChgIndirReg16(char *to, int64_t reg, int64_t scale, int64_t index, i
   return len;
 }
 
-int64_t X86XChgIndirReg64(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86XChgIndirReg64(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1620,7 +1675,8 @@ int64_t X86XChgIndirReg64(char *to, int64_t reg, int64_t scale, int64_t index, i
   return len;
 }
 
-int64_t X86MovRegIndirI32(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovRegIndirI32(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1631,7 +1687,8 @@ int64_t X86MovRegIndirI32(char *to, int64_t reg, int64_t scale, int64_t index, i
   return len;
 }
 
-int64_t X86MovIndirRegI32(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovIndirRegI32(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1642,7 +1699,8 @@ int64_t X86MovIndirRegI32(char *to, int64_t reg, int64_t scale, int64_t index, i
   return len;
 }
 
-int64_t X86MovRegIndirI16(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovRegIndirI16(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1654,7 +1712,8 @@ int64_t X86MovRegIndirI16(char *to, int64_t reg, int64_t scale, int64_t index, i
   return len;
 }
 
-int64_t X86MovZXRegIndirI8(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovZXRegIndirI8(char *to, int64_t reg, int64_t scale, int64_t index,
+                           int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1678,7 +1737,8 @@ int64_t X86MovZXRegRegI8(char *to, int64_t reg, int64_t reg2) {
   return len;
 }
 
-int64_t X86MovZXRegIndirI16(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovZXRegIndirI16(char *to, int64_t reg, int64_t scale, int64_t index,
+                            int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1690,7 +1750,8 @@ int64_t X86MovZXRegIndirI16(char *to, int64_t reg, int64_t scale, int64_t index,
   return len;
 }
 
-int64_t X86MovSXRegIndirI8(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovSXRegIndirI8(char *to, int64_t reg, int64_t scale, int64_t index,
+                           int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1702,7 +1763,8 @@ int64_t X86MovSXRegIndirI8(char *to, int64_t reg, int64_t scale, int64_t index, 
   return len;
 }
 
-int64_t X86MovSXRegIndirI16(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovSXRegIndirI16(char *to, int64_t reg, int64_t scale, int64_t index,
+                            int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1714,7 +1776,8 @@ int64_t X86MovSXRegIndirI16(char *to, int64_t reg, int64_t scale, int64_t index,
   return len;
 }
 
-int64_t X86MovSXRegIndirI32(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovSXRegIndirI32(char *to, int64_t reg, int64_t scale, int64_t index,
+                            int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1725,7 +1788,8 @@ int64_t X86MovSXRegIndirI32(char *to, int64_t reg, int64_t scale, int64_t index,
   return len;
 }
 
-int64_t X86MovIndirRegI16(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovIndirRegI16(char *to, int64_t reg, int64_t scale, int64_t index,
+                          int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1737,7 +1801,8 @@ int64_t X86MovIndirRegI16(char *to, int64_t reg, int64_t scale, int64_t index, i
   return len;
 }
 
-int64_t X86MovRegIndirI8(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovRegIndirI8(char *to, int64_t reg, int64_t scale, int64_t index,
+                         int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1748,7 +1813,8 @@ int64_t X86MovRegIndirI8(char *to, int64_t reg, int64_t scale, int64_t index, in
   return len;
 }
 
-int64_t X86MovIndirRegI8(char *to, int64_t reg, int64_t scale, int64_t index, int64_t base, int64_t off) {
+int64_t X86MovIndirRegI8(char *to, int64_t reg, int64_t scale, int64_t index,
+                         int64_t base, int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1771,7 +1837,8 @@ int64_t X86BtRegReg(char *to, int64_t r, int64_t b) {
   return len;
 }
 
-int64_t X86BtSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86BtSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                    int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1796,7 +1863,8 @@ int64_t X86BtRegImm(char *to, int64_t r, int64_t b) {
   return len;
 }
 
-int64_t X86BtSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86BtSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                    int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1821,7 +1889,8 @@ int64_t X86BtcRegReg(char *to, int64_t r, int64_t b) {
   return len;
 }
 
-int64_t X86BtcSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86BtcSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                     int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1854,7 +1923,8 @@ int64_t X86BtcRegImm(char *to, int64_t r, int64_t b) {
   return len;
 }
 
-int64_t X86BtcSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86BtcSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                     int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1879,7 +1949,8 @@ int64_t X86BtsRegReg(char *to, int64_t r, int64_t b) {
   return len;
 }
 
-int64_t X86BtsSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86BtsSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                     int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1904,7 +1975,8 @@ int64_t X86BtsRegImm(char *to, int64_t r, int64_t b) {
   return len;
 }
 
-int64_t X86BtsSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86BtsSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                     int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1929,7 +2001,8 @@ int64_t X86BtrRegReg(char *to, int64_t r, int64_t b) {
   return len;
 }
 
-int64_t X86BtrSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86BtrSIBReg(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                     int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1954,7 +2027,8 @@ int64_t X86BtrRegImm(char *to, int64_t r, int64_t b) {
   return len;
 }
 
-int64_t X86BtrSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64_t off) {
+int64_t X86BtrSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b,
+                     int64_t off) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1967,7 +2041,8 @@ int64_t X86BtrSIBImm(char *to, int64_t r, int64_t s, int64_t i, int64_t b, int64
   return len;
 }
 
-int64_t X86AndIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86AndIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s, int64_t i,
+                        int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -1997,7 +2072,8 @@ int64_t X86AndIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s, int64_t i,
   return len;
 }
 
-int64_t X86XorIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86XorIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s, int64_t i,
+                        int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -2027,7 +2103,8 @@ int64_t X86XorIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s, int64_t i,
   return len;
 }
 
-int64_t X86XorIndirXReg(char *to, int64_t sz, int64_t r, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86XorIndirXReg(char *to, int64_t sz, int64_t r, int64_t s, int64_t i,
+                        int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -2040,7 +2117,8 @@ int64_t X86XorIndirXReg(char *to, int64_t sz, int64_t r, int64_t s, int64_t i, i
   return len;
 }
 
-int64_t X86AndIndirXReg(char *to, int64_t sz, int64_t r, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86AndIndirXReg(char *to, int64_t sz, int64_t r, int64_t s, int64_t i,
+                        int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -2053,7 +2131,8 @@ int64_t X86AndIndirXReg(char *to, int64_t sz, int64_t r, int64_t s, int64_t i, i
   return len;
 }
 
-int64_t X86ShlIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86ShlIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s, int64_t i,
+                        int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -2076,7 +2155,8 @@ int64_t X86ShlIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s, int64_t i,
   return len;
 }
 
-int64_t X86ShrIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86ShrIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s, int64_t i,
+                        int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -2099,7 +2179,8 @@ int64_t X86ShrIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s, int64_t i,
   return len;
 }
 
-int64_t X86SarIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86SarIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s, int64_t i,
+                        int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -2121,7 +2202,8 @@ int64_t X86SarIndirXImm(char *to, int64_t sz, int64_t amt, int64_t s, int64_t i,
   ADD_U8(amt);
   return len;
 }
-int64_t X86OrIndirXReg(char *to, int64_t sz, int64_t r, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86OrIndirXReg(char *to, int64_t sz, int64_t r, int64_t s, int64_t i,
+                       int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -2134,7 +2216,8 @@ int64_t X86OrIndirXReg(char *to, int64_t sz, int64_t r, int64_t s, int64_t i, in
   return len;
 }
 
-int64_t X86OrIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86OrIndirXImm(char *to, int64_t sz, int64_t imm, int64_t s, int64_t i,
+                       int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -2327,7 +2410,8 @@ int64_t X86Setcc(char *to, int64_t cond, int64_t r) {
   return len;
 }
 
-int64_t X86IncIndirX(char *to, int64_t sz, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86IncIndirX(char *to, int64_t sz, int64_t s, int64_t i, int64_t b,
+                     int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -2342,7 +2426,8 @@ int64_t X86IncIndirX(char *to, int64_t sz, int64_t s, int64_t i, int64_t b, int6
   SIB_END();
   return len;
 }
-int64_t X86DecIndirX(char *to, int64_t sz, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86DecIndirX(char *to, int64_t sz, int64_t s, int64_t i, int64_t b,
+                     int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -2357,7 +2442,8 @@ int64_t X86DecIndirX(char *to, int64_t sz, int64_t s, int64_t i, int64_t b, int6
   SIB_END();
   return len;
 }
-int64_t X86AddIndirXImm32(char *to, int64_t sz, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86AddIndirXImm32(char *to, int64_t sz, int64_t imm, int64_t s,
+                          int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)
@@ -2384,7 +2470,8 @@ int64_t X86AddIndirXImm32(char *to, int64_t sz, int64_t imm, int64_t s, int64_t 
   return len;
 }
 
-int64_t X86SubIndirXImm32(char *to, int64_t sz, int64_t imm, int64_t s, int64_t i, int64_t b, int64_t o) {
+int64_t X86SubIndirXImm32(char *to, int64_t sz, int64_t imm, int64_t s,
+                          int64_t i, int64_t b, int64_t o) {
   int64_t len = 0;
   char buf[16];
   if (!to)

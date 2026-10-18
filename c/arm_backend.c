@@ -958,8 +958,6 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       if (tmp.raw_type == RT_F64) {                                            \
         AIWNIOS_ADD_CODE(ARM_fmovI64F64(i, i));                                \
       }                                                                        \
-      \		 
-                                                                                                                                                                                                                                                                                                                                                                                                                                \
     }                                                                          \
   }
   // Arm mandates 16 byte align
@@ -2290,7 +2288,7 @@ static int64_t __SexyAssignOp(CCmpCtrl *cctrl, CRPN *rpn,
       } else {
         //                ____________
         // (o)    (o)    /            \
-          //  \      /    |             |
+        //  \      /    |             |
         //   \ ___/     |    tmp2 has |
         //  / _____\    |   register 3|
         // /  \___/ \___| as fallback |
@@ -2914,12 +2912,12 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
     next2 = ICFwd(next3);                                                      \
     if (next->type == IC_EQ_EQ ||                                              \
         next->type == IC_NE) { /*See binop: in PushTmpDepthFirst*/             \
-      \ 
-    code_off = __OptPassFinal(cctrl, next3, bin, code_off);                    \
+                                                                               \
+      code_off = __OptPassFinal(cctrl, next3, bin, code_off);                  \
       code_off = __OptPassFinal(cctrl, next2, bin, code_off);                  \
     } else {                                                                   \
-      \ 
-    code_off = __OptPassFinal(cctrl, next2, bin, code_off);                    \
+                                                                               \
+      code_off = __OptPassFinal(cctrl, next2, bin, code_off);                  \
       code_off = __OptPassFinal(cctrl, next3, bin, code_off);                  \
     }                                                                          \
     if (next3->raw_type == RT_F64 || next2->raw_type == RT_F64) {              \
@@ -3348,7 +3346,7 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 //
 //  /\   /\      ____
 //  ||___||     /    \
-      //  | o_o | <==(README)
+//  | o_o | <==(README)
 //  | \_/ |     \____/
 //  ||   ||
 //  \/   \/
@@ -3558,8 +3556,8 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
                              code_off);                                        \
   if (rpn->res.raw_type == RT_F64) {                                           \
     AIWNIOS_ADD_CODE(ARM_fcmp(next2->res.reg, next->res.reg));                 \
-    \	
-        AIWNIOS_ADD_CODE(                                                      \
+                                                                               \
+    AIWNIOS_ADD_CODE(                                                          \
         ARM_fcsel(MFR(cctrl, 0), next2->res.reg, next->res.reg, cond));        \
   } else {                                                                     \
     AIWNIOS_ADD_CODE(ARM_cmpRegX(next2->res.reg, next->res.reg));              \
@@ -3571,8 +3569,8 @@ static int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
   tmp.reg = 0;                                                                 \
   rpn->tmp_res = tmp;                                                          \
   if (rpn->res.keep_in_tmp)                                                    \
-    \ 
-        rpn->res = tmp;                                                        \
+                                                                               \
+    rpn->res = tmp;                                                            \
   code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
     CSEL_OP(ARM_GT);
     break;

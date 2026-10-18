@@ -673,8 +673,7 @@ re_enter:;
         goto if_fail;
       } else if (!strcmp(lex->string, "endif")) {
         goto re_enter;
-      } else if (!strcmp(lex->string, "else"
-      )) {
+      } else if (!strcmp(lex->string, "else")) {
         in_else = 1;
         // You are here are you passed the initial #if statement?
         // Otherwise you would be searching for an #else
@@ -691,8 +690,8 @@ re_enter:;
           in_else = 0;
           goto if_fail;
         } else
-        in_else=1;
-          goto if_pass;
+          in_else = 1;
+        goto if_pass;
       }
       if (!strcmp(lex->string, "ifdef")) {
         old_flags = lex->flags;
@@ -727,9 +726,9 @@ re_enter:;
             LexErr(lex, "Stray '#' in program.");
             return lex->cur_tok = ERR;
           }
-          if (!in_else && !strcmp(lex->string, "else")) { 
-			  if(!--idx)
-			    goto if_pass;
+          if (!in_else && !strcmp(lex->string, "else")) {
+            if (!--idx)
+              goto if_pass;
           } else if (!strcmp(lex->string, "endif")) {
             if (!--idx)
               goto re_enter;
@@ -739,7 +738,7 @@ re_enter:;
           goto if_fail_loop;
         } else {
         if_pass:;
-        in_else=1;
+          in_else = 1;
         }
         lex->flags = old_flags;
         goto re_enter;

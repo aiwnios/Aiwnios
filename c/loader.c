@@ -470,7 +470,7 @@ again:;
     switch (etype) {
     case IET_MAIN:
       fptr = (i + module_base);
-      if (FFI_CALL_TOS_0_FEW_INSTS(fptr, 1 << 21 /* Savage*/ ))
+      if (FFI_CALL_TOS_0_FEW_INSTS(fptr, 1 << 21 /* Savage*/))
         return osrc;
       goto again;
       break;
