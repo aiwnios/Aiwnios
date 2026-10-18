@@ -38,6 +38,7 @@ elseif (ARCH STREQUAL "riscv64")
     riscv_backend.c)
 elseif (ARCH STREQUAL "x86_64")
   list(APPEND C_SOURCES
+    x86_64_asm.c
     x86_64_backend.c)
 elseif (ARCH STREQUAL "arm64")
   # For SDL2 cmake modules

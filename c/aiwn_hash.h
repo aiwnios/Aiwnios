@@ -70,6 +70,7 @@ typedef struct CHashClass {
 #define REG_MAYBE -3
   // TODO make a mechanism for assigning hardware regs
 
+// DO NOT TOUCH
 #define RT_U0    -1
 #define RT_UNDEF 0
 #define RT_I8i   1
