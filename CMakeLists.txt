@@ -92,18 +92,30 @@ target_link_options(aiwnios PRIVATE
 endif()
 
 add_subdirectory(vendor)
+if (CMAKE_C_COMPILER_ID MATCHES "Clang"
+    AND NOT CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+  # why the fuck? no time to care for now
+  message(FATAL_ERROR "Aiwnios only builds with LTO and Clang. Enable LTO with -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON please")
+endif ()
 
 if (CMAKE_BUILD_TYPE STREQUAL "MinSizeRel"
     OR CMAKE_INTERPROCEDURAL_OPTIMIZATION)
   if (CMAKE_C_COMPILER_ID MATCHES "Clang")
-    find_program(LLD lld)
-    if (NOT LLD)
-      message(FATAL_ERROR "LTO with Clang requires LLD")
+    find_program(MOLD mold)
+    if (NOT MOLD)
+      find_program(LLD lld)
+      if (NOT LLD)
+        message(FATAL_ERROR "LTO with Clang requires LLD or mold")
+      endif ()
     endif ()
     set_target_properties(aiwnios
       PROPERTIES
       INTERPROCEDURAL_OPTIMIZATION OFF)
-    target_link_options(aiwnios PRIVATE -flto=full -fuse-ld=lld)
+    if (MOLD)
+      target_link_options(aiwnios PRIVATE -flto=full -fuse-ld=mold)
+    elseif (LLD)
+      target_link_options(aiwnios PRIVATE -flto=full -fuse-ld=lld)
+    endif ()
     target_compile_options(aiwnios PRIVATE -flto=full)
   else ()
     set_target_properties(aiwnios

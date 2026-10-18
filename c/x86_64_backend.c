@@ -95,10 +95,7 @@ extern int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 
 #define INST(func, ...)                                                        \
   {                                                                            \
-    if (bin)                                                                   \
-      code_off += func(bin + code_off, __VA_ARGS__);                           \
-    else                                                                       \
-      code_off += func(NULL, __VA_ARGS__);                                     \
+    code_off += func(bin ? bin + code_off : NULL, __VA_ARGS__);                \
   }
 
 //
