@@ -1458,7 +1458,7 @@ static int64_t __ICFCallTOS(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       void *fp = funn->integer;
       for (__auto_type x = __INLINES; x != __INLINES_END; x++)
         if (fp == memfps[x->e])
-          nm = memfps + x->e;
+          nm = x;
       if (!nm)
         goto notmem;
       break;
