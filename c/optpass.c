@@ -15,6 +15,20 @@ static int64_t IsConst(CRPN *rpn) {
   return 0;
 }
 
+// cvttsd2si truncates & out of range/NaNs will output INT64_MIN
+// instead of trapping. a bare cast would ub on such inputs in the compiler
+static int64_t F642I64(double d) {
+  int64_t ret;
+#ifdef __x86_64__
+  // magic number is 0x43e0000000000000
+  if (!(d > -9.223372036854776e18) || !(d < 9.223372036854776e18))
+    ret = (int64_t)(1ull << 63);
+  else
+#endif
+    __builtin_memcpy(&ret, &d, sizeof d);
+  return ret;
+}
+
 static int64_t PtrWidthOfRPN(CRPN *rpn) {
   int64_t r = 1;
   if (rpn->ic_dim) {
@@ -511,10 +525,9 @@ loop:
       next = rpn->base.next;
       if (IsConst(next)) {
         if (next->type == IC_F64)
-          a2 = next->flt;
+          rpn->integer = next->flt != 0.0;
         else
-          a2 = next->integer;
-        rpn->integer = !!a2;
+          rpn->integer = !!next->integer;
         rpn->raw_type = RT_I64i;
         rpn->type = IC_I64;
         ICFree(next);
@@ -550,7 +563,7 @@ loop:
         if (rpn->raw_type == RT_F64) {
           switch (rpn->type) {
           default:
-            rpn->flt = *(double *)&next->integer;
+            __builtin_memcpy(&rpn->flt, &next->integer, sizeof(double));
             break;
           case IC_F64:
             rpn->flt = next->flt;
@@ -559,7 +572,7 @@ loop:
         } else {
           switch (rpn->type) {
           case IC_F64:
-            rpn->integer = *(int64_t *)&next->flt;
+            __builtin_memcpy(&rpn->integer, &next->flt, sizeof(double));
             break;
           default:
             rpn->integer = next->integer;
@@ -668,17 +681,20 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          if (b)
-            rpn->flt = a / b;
-          else
-            rpn->integer = 0; //???
+          // Stock folds 1.0/0.0 silently to inf (no trap), so plain IEEE
+          // divide.
+          rpn->flt = a / b;
         } else {
           SET_A2B2;
+#ifdef __x86_64__
+          // DivZero is runtime, bubble it up
+          // also avoids host UB for INT64_MIN/-1 which faults at runtime too
+	  // just uglier
+          if (!b2 || (a2 == (int64_t)(1ull << 63) && b2 == -1))
+            goto next1;
+#endif
           rpn->type = IC_I64;
-          if (b2)
-            rpn->integer = a2 / b2;
-          else
-            rpn->integer = 0; //???
+          rpn->integer = a2 / b2;
         }
       } else
         goto next1;
@@ -707,7 +723,8 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt = ((int64_t *)&a)[0] & ((int64_t *)&b)[0];
+	  // type punned
+          rpn->integer = F642I64(a) & F642I64(b);
         } else {
           SET_A2B2;
           rpn->type = IC_I64;
@@ -725,7 +742,7 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt = ((int64_t *)&a)[0] ^ ((int64_t *)&b)[0];
+          rpn->integer = F642I64(a) ^ F642I64(b);
         } else {
           SET_A2B2;
           rpn->type = IC_I64;
@@ -745,8 +762,11 @@ loop:
           rpn->flt = fmod(a, b);
         } else {
           SET_A2B2;
-          if (!b2)
+#ifdef __x86_64__
+          // same as IC_DIV
+          if (!b2 || (a2 == (int64_t)(1ull << 63) && b2 == -1))
             goto next1;
+#endif
           rpn->type = IC_I64;
           rpn->integer = a2 % b2;
         }
@@ -759,7 +779,8 @@ loop:
         if (rpn->raw_type == RT_F64) {
           SET_AB;
           rpn->type = IC_F64;
-          rpn->flt = ((int64_t *)&a)[0] | ((int64_t *)&b)[0];
+          // same as IC_AND
+          rpn->integer = F642I64(a) | F642I64(b);
         } else {
           SET_A2B2;
           rpn->type = IC_I64;
@@ -1661,6 +1682,7 @@ char *Compile(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
   return OptPassFinal(cctrl, res_sz, dbg_info, heap);
 }
 
+#ifdef USE_BYTECODE
 #include "aiwn_bytecode.h"
 char *CompileBC(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
                 CHeapCtrl *heap) {
@@ -1682,3 +1704,4 @@ char *CompileBC(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
   cctrl->flags = old_flags;
   return OptPassFinalBC(cctrl, res_sz, dbg_info, heap);
 }
+#endif

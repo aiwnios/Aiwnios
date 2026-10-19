@@ -1424,8 +1424,7 @@ static int64_t STK_NetUDPAddrDel(int64_t *stk) {
   NetUDPAddrDel(stk[0]);
 }
 
-extern char *CompileBC(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
-                       CHeapCtrl *heap);
+#ifdef USE_BYTECODE
 static int64_t STK_BCCompile(int64_t *stk) {
   return (int64_t)CompileBC((void *)stk[0], (void *)stk[1], (void *)stk[2],
                             (void *)stk[3]);
@@ -1446,6 +1445,13 @@ static int64_t STK_BCDel(int64_t *stk) {
 static int64_t STK_BCRun(int64_t *stk) {
   return ABCRun((void *)stk[0]);
 }
+static int64_t STK_AiwnBCCall(int64_t *stk) {
+  return AiwnBCCall((void *)stk[0]);
+}
+static int64_t STK_AiwnBCCallArgs(int64_t *stk) {
+  return AiwnBCCallArgs((void *)stk[0], stk[0], (void *)stk[1]);
+}
+#endif
 
 static int64_t STK_VFsDir(int64_t *) {
   char **ass = VFsDir();
@@ -1532,12 +1538,7 @@ static int64_t STK_AiwniosPackRamDiskPtr(int64_t *s) {
 static int64_t STK_AiwniosPackBootCommand(int64_t *s) {
   return AiwniosPackBootCommand(s);
 }
-static int64_t STK_AiwnBCCall(int64_t *stk) {
-  return AiwnBCCall((void *)stk[0]);
-}
-static int64_t STK_AiwnBCCallArgs(int64_t *stk) {
-  return AiwnBCCallArgs((void *)stk[0], stk[0], (void *)stk[1]);
-}
+
 static void BootAiwnios(char *bootstrap_text) {
   // Run a dummy expression to link the functions into the hash table
   CLexer *lex = LexerNew("None", !bootstrap_text ? "1+1;" : bootstrap_text);
@@ -1557,11 +1558,6 @@ static void BootAiwnios(char *bootstrap_text) {
     CodeCtrlPop(ccmp);
     CodeCtrlPush(ccmp);
     // TODO make a better way of doing this
-    PrsAddSymbol("BCCompile", &STK_BCCompile, 4);
-    PrsAddSymbol("BCCtxDel", &STK_BCCtxDel, 1);
-    PrsAddSymbol("BCCtxNew", &STK_BCCtxNew, 4);
-    PrsAddSymbol("BCRun", &STK_BCRun, 1);
-    PrsAddSymbol("BCDel", &STK_BCDel, 1);
     PrsAddSymbol("DolDocDumpIR", STK_DolDocDumpIR, 3);
     PrsAddSymbol("ScreenUpdateInProgress", ScreenUpdateInProgress, 0);
     PrsAddSymbol("SetVolume", STK_AiwniosSetVolume, 1);
@@ -1578,6 +1574,11 @@ static void BootAiwnios(char *bootstrap_text) {
     PrsAddSymbol("MPSetProfilerInt", STK_MPSetProfilerInt, 3);
     PrsAddSymbol("BoundsCheck", STK_BoundsCheck, 2);
 #ifdef USE_BYTECODE
+    PrsAddSymbol("BCCompile", &STK_BCCompile, 4);
+    PrsAddSymbol("BCCtxDel", &STK_BCCtxDel, 1);
+    PrsAddSymbol("BCCtxNew", &STK_BCCtxNew, 4);
+    PrsAddSymbol("BCRun", &STK_BCRun, 1);
+    PrsAddSymbol("BCDel", &STK_BCDel, 1);
     PrsAddSymbol("MakeContext", AiwnBCMakeContext, 3);
     PrsAddSymbol("TaskContextSetRIP", AiwnBCTaskContextSetRIP, 2);
     PrsAddSymbol("TaskContextGetRIP", AiwnBCTaskContextGetRIP, 1);

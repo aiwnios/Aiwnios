@@ -976,7 +976,11 @@ rex|=0x40;
     if(reg_mode)
       ext=reg_mode->r&0b111;
     if(indir_mode->type==X86MT_INDIR) {
-      if(indir_mode->machine_code) {
+//no base reg in 64-bit mode means rip relative disp32 sib base=101,mod=00
+//final rip isnt known til JITFixupAiwniosAOTBlob so always patch it up
+//even for imms already resolved and mark it relative (32bit absolute
+//disp32 would want is_rel=FALSE but were in 64bit land
+      if(indir_mode->machine_code||indir_mode->base==-1) {
         if(!asm_patches)
 	  len+=EncodeSib(to+len,ext,indir_mode->scale,indir_mode->idx,indir_mode->base,
 	        I32_MAX);
@@ -984,6 +988,8 @@ rex|=0x40;
 	  patch=CAlloc(sizeof CAsmPatch);
 	  patch->imm=MAlloc(sizeof CX86AddrMode);
 	  MemCpy(patch->imm,modes[indir_mode_idx],sizeof CX86AddrMode);
+	  if(indir_mode->base==-1)
+	    patch->is_rel=TRUE;
 	  QueIns(patch,asm_patches);
 	  len+=EncodeSib(to+len,ext,indir_mode->scale,indir_mode->idx,indir_mode->base,
 	        I32_MAX,&patch->sz);
@@ -1215,22 +1221,29 @@ U0 JITFixupAiwniosAOTBlob(CCmpCtrl *cc,CAiwniosAOTBlob *blob,U8 *buf) {
       tmp=patch->imm->off;
       switch(sz=patch->sz) {
         case 1:
-	  if(patch->is_rel)
-	    buf[patch->rip]=tmp-(buf+sz+patch->rip);
-	  else
-	    buf[patch->rip]=tmp;
+	  if(patch->is_rel) {
+	    tmp-=buf+sz+patch->rip;
+	    if(tmp<-128||tmp>127)
+	      LexExcept(cc,"Asm rel8 out of range at ");
+	  }
+	  buf[patch->rip]=tmp;
 	  break;
         case 2:
-	  if(patch->is_rel)
-	    buf[patch->rip](U16)=tmp-(buf+sz+patch->rip);
-	  else
-	    buf[patch->rip](U16)=tmp;
+	  if(patch->is_rel) {
+	    tmp-=buf+sz+patch->rip;
+	    if(tmp<-32768||tmp>32767)
+	      LexExcept(cc,"Asm rel16 out of range at ");
+	  }
+	  buf[patch->rip](U16)=tmp;
 	  break;
         case 4:
-	  if(patch->is_rel)
-	    buf[patch->rip](U32)=tmp-(buf+sz+patch->rip);
-	  else
-	    buf[patch->rip](U32)=tmp;
+	  if(patch->is_rel) {
+	    tmp-=buf+sz+patch->rip;
+//use absolute imm64 instead, jit cant reach outside of +-2gb ie the data heap
+	    if(tmp<-2147483648||tmp>2147483647)
+	      LexExcept(cc,"Asm RIP-relative disp out of range, use MOV reg64,sym at ");
+	  }
+	  buf[patch->rip](U32)=tmp;
 	  break;
         case 8:
 	  if(patch->is_rel)
@@ -1431,6 +1444,31 @@ duxx:
     }
   }
 fin:
+  if(cc->flags&CCF_AOT_COMPILE) {
+//aot relocates at Load
+//patch up pie syms, ie frame-local (&i[RBP] rbp rel disp)
+//and relative (blob addr relative branches and rip rel @@)
+//absolute/global/import patches and label defs that
+//could be bullshit are rejected, reg only and constant code is fine
+    patch=asm_patches->next;
+    while(patch!=asm_patches) {
+      if(patch->imm&&!patch->imm->local_asm_undef_hash&&!patch->is_rel)
+        goto aot_nope;
+      patch=patch->next;
+    }
+    tmp_to_fill=to_fill->next;
+    while(tmp_to_fill!=to_fill) {
+      if(tmp_to_fill->h->type&HTF_EXPORT)
+        goto aot_nope;
+      tmp_to_fill=tmp_to_fill->next;
+    }
+aot_nope:;
+    if(patch!=asm_patches||to_fill->next!=to_fill) {
+      QueDel(to_fill);
+      Free(buf);
+      LexExcept(cc,"AOT asm must be position-independent (no globals/imports/exports) at ");
+    }
+  }
   ret_blob=CAlloc(sizeof CAiwniosAOTBlob);
   ret_blob->to_fill=QueCopy(to_fill);
   ret_blob->asm_patches=QueCopy(asm_patches);

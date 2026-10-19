@@ -7269,6 +7269,7 @@ public extern I64 LongLines(U8 *files_find_mask="*",I64 cols=80,U8 *fu_flags=NUL
 public extern U0 SU(U8 *files_find_mask,I64 suf_flags,U8 *fu_flags=NULL,F64 indent_scale_factor=0);
 public extern U0 S2T(U8 *files_find_mask,U8 *fu_flags=NULL);
 
+#ifdef TARGET_BYTECODE
 #ifdef IMPORT_AIWNIOS_SYMS
 import U8 *BCCompile(U8 *cc,I64 *res_sz,U8 **dbg_info,CHeapCtrl *);
 import U0 BCCtxDel(U8 *);
@@ -7282,6 +7283,5 @@ extern U8 *BCCtxNew(U8 *bc_addr,I64 *stk,I64 argc,I64 *argv);
 extern I64 BCRun(U8 *bc_ctx);
 extern U0 BCDel(U8 *bc);
 #endif
-#ifdef TARGET_BYTECODE
 #define PAUSE ;
 #endif

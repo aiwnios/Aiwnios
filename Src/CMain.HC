@@ -79,9 +79,11 @@ U8 *LexStmt2Bin(CCmpCtrl *cc,I64 *_type,I64 cmp_flags=0)
 //ARM likes 4byte align for instrcutions
         while(cc->aotc->rip%4)
 	  AOTStoreCodeU8(cc,0);
+#ifdef TARGET_BYTECODE
       if(Bt(&cc->opts,OPTf_BYTE_CODE)) {
         res=COCBCCompile(cc,&size,NULL,_type);
       } else
+#endif
         res=COCCompile(cc,&size,NULL,_type);
       if (res) {
         if (cc->flags&CCF_AOT_COMPILE) {

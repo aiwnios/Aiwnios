@@ -1,4 +1,5 @@
 #pragma once
+#ifdef USE_BYTECODE
 #include <stdint.h>
 #include "aiwn_lexparser.h"
 #include "aiwn_mem.h"
@@ -38,3 +39,6 @@ void *AiwnBCDbgCurContext();
 void AiwnBCDbgFault(int sigh);
 int64_t BCAwake() ;
 void BCInterupt() ;
+char *CompileBC(CCmpCtrl *cctrl, int64_t *res_sz, char **dbg_info,
+                       CHeapCtrl *heap);
+#endif

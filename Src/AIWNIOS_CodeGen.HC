@@ -2102,9 +2102,11 @@ break;case IC_ASM:
     aiwnios_dbg_info=CAlloc(8*(reported_max_ln-reported_min_ln+2));
   } else 
 	aiwnios_dbg_info=NULL;
-  if(byte_code)
+#ifdef TARGET_BYTECODE
+  if (byte_code)
     machine_code=BCCompile(acc,&idx,aiwnios_dbg_info,Fs->data_heap);
   else
+#endif
     machine_code=__HC_Compile(acc,&idx,aiwnios_dbg_info,Fs->code_heap);
   
 
@@ -2274,8 +2276,17 @@ break;case IC_ASM:
     if(cur->user_data) I64SetDel(cur->user_data);
     if(cur->user_data2) I64SetDel(cur->user_data2);
     if(cur->type==IC_ASM) {
-//TODO AOT
-      JITFixupAiwniosAOTBlob(cc,cur->ic_data,cur->ic_data(CAiwniosAOTBlob*)->final_start_addr);
+//TODO AOT(?)
+      if(cur->ic_data(CAiwniosAOTBlob*)->final_start_addr) {
+        JITFixupAiwniosAOTBlob(cc,cur->ic_data,cur->ic_data(CAiwniosAOTBlob*)->final_start_addr);
+//__HC_ICAdd_RawBytes (above) copied the unpatched bytes into the C IR
+//before the final address was known (used by rip relative disp32)
+// label is emitted right before the bytes,so bytes start exactly at final_start_addr
+        WriteProtectMemCpy(cur->ic_data(CAiwniosAOTBlob*)->final_start_addr,
+          cur->ic_data(CAiwniosAOTBlob*)->data,
+          cur->ic_data(CAiwniosAOTBlob*)->len);
+      }
+
       AiwniosAOTBlobDel(cur->ic_data);
     }
   }
@@ -2291,6 +2302,7 @@ U8 *COCCompile(CCmpCtrl *cc,I64 *_code_size,CDbgInfo **_dbg,I64 *_type) {
   U8 *mc=AiwniosCompile(cc,_code_size,_dbg,FALSE);
   return mc;
 }
+#ifdef TARGET_BYTECODE
 U8 *COCBCCompile(CCmpCtrl *cc,I64 *_code_size,CDbgInfo **_dbg,I64 *_type) {
   CRPN *rpn=cc->coc.coc_head.next;
   if(rpn->type==IC_RET&&_type)
@@ -2298,6 +2310,7 @@ U8 *COCBCCompile(CCmpCtrl *cc,I64 *_code_size,CDbgInfo **_dbg,I64 *_type) {
   U8 *mc=AiwniosCompile(cc,_code_size,_dbg,TRUE);
   return mc;
 }
+#endif
 
 /**
  * Has format 

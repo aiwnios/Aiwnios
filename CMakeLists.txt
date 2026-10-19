@@ -93,6 +93,7 @@ endif()
 
 add_subdirectory(vendor)
 if (CMAKE_C_COMPILER_ID MATCHES "Clang"
+    AND NOT USE_BYTECODE
     AND NOT CMAKE_INTERPROCEDURAL_OPTIMIZATION)
   # why the fuck? no time to care for now
   message(FATAL_ERROR "Aiwnios only builds with LTO and Clang. Enable LTO with -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON please")

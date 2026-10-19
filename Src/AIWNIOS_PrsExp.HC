@@ -1287,7 +1287,13 @@ typecast:
 	      rpn=cc->coc.coc_head.next;
 	      last_c=rpn->ic_class;
 	      if(rpn->ic_class->raw_type==RT_F64&&mlst->member_class->raw_type!=RT_F64) {
-	        RPNAddNew(cc,IC_TO_I64,,cmp.internal_types[RT_I64],TRUE);
+#ifdef TARGET_X86
+//const fold
+		if(!(Bt(&ic_fun->flags,Ff_INTERNAL)&&ic_fun->exe_addr==IC_TO_BOOL))
+		  RPNAddNew(cc,IC_TO_I64,,cmp.internal_types[RT_I64],TRUE);
+#else
+                 RPNAddNew(cc,IC_TO_I64,,cmp.internal_types[RT_I64],TRUE);
+#endif
 	      } else if(rpn->ic_class->raw_type!=RT_F64&&mlst->member_class->raw_type==RT_F64) {
 	        RPNAddNew(cc,IC_TO_F64,,cmp.internal_types[RT_F64],TRUE);
 	      }
@@ -1331,7 +1337,7 @@ vargs:
 	  arity++; //Include the function in the arity
 //Check for _intern functions 
 	  if(!(ic_fun->flags&(1<<Ff_INTERNAL))) {
-	    RPNAddNew(
+	    rpn=RPNAddNew(
 		  cc,
 		  IC_CALL_INDIRECT,
 		  arity,

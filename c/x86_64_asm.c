@@ -1365,7 +1365,6 @@ int64_t X86PackedShuffleD128(char *to, int64_t a, int64_t b, int64_t imm8) {
   ADD_U8(imm8);
   return len;
 }
-// Packed-double ALU, reg-reg forms (mirror X86AddSDReg with 0x66 prefix).
 int64_t X86AddPDReg(char *to, int64_t a, int64_t b) {
   int64_t len = 0;
   char buf[16];

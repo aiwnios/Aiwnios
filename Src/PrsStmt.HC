@@ -177,9 +177,11 @@ U0 PrsFun(CCmpCtrl *cc,CHashClass *tmp_return,U8 *name,I64 fsp_flags)
       AOTStoreCodeU8(cc,0);
     cc->htc.fun->exe_addr=cc->aotc->rip;
     cc->htc.fun->type|=HTF_EXPORT|HTF_RESOLVE;
+#ifdef TARGET_BYTECODE
     if(Bt(&cc->opts,OPTf_BYTE_CODE)) {
       r=COCBCCompile(cc,&size,&cc->htc.fun->dbg_info,NULL);
     } else
+#endif
       r=COCCompile(cc,&size,&cc->htc.fun->dbg_info,NULL);
     if (r) {
       j=(size+7)>>3;
@@ -191,10 +193,12 @@ U0 PrsFun(CCmpCtrl *cc,CHashClass *tmp_return,U8 *name,I64 fsp_flags)
     FillInShortCalls(cc); //Added by nroot
   } else {
     old_trace=LBtr(&cc->opts,OPTf_TRACE);
+#ifdef TARGET_BYTECODE
     if(Bt(&cc->opts,OPTf_BYTE_CODE))
       cc->htc.fun->exe_addr=COCBCCompile(
 	    cc,&size,&cc->htc.fun->dbg_info,NULL);
     else
+#endif
       cc->htc.fun->exe_addr=COCCompile(
 	    cc,&size,&cc->htc.fun->dbg_info,NULL);
     if (old_trace) {

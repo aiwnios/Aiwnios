@@ -27,11 +27,12 @@ set(C_SOURCES
   "${CMAKE_CURRENT_SOURCE_DIR}/socket.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/sound.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/ulock.h"
-  "${CMAKE_CURRENT_SOURCE_DIR}/w_bytecode.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/windows.c")
 if(USE_BYTECODE)
   list(APPEND C_SOURCES
-	wasm_misc.c)
+	wasm_misc.c
+  "${CMAKE_CURRENT_SOURCE_DIR}/w_bytecode.c"
+)
 elseif (ARCH STREQUAL "riscv64")
   list(APPEND C_SOURCES
     riscv_asm.c
