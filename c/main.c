@@ -74,22 +74,31 @@ struct arg_lit *arg_help, *arg_overwrite, *arg_new_boot_dir, *arg_asan_enable,
                                *arg_grab, *arg_fast_fail, *arg_s;
 struct arg_file *arg_t_dir, *arg_bootstrap_bin, *arg_boot_files, *arg_pidfile;
 static struct arg_end *_arg_end;
+
 #ifdef AIWNIOS_TESTS
 // Import PrintI first
 static void PrintI(char *str, int64_t i) {
   printf("%s:%lld\n", str, i);
 }
+
 static void PrintF(char *str, double f) {
   printf("%s:%lf\n", str, f);
 }
 static void PrintPtr(char *str, void *f) {
   printf("%s:%p\n", str, f);
 }
-static int64_t STK_PrintI(int64_t *);
-static int64_t STK_PrintF(int64_t *);
-static int64_t STK_PrintPtr(int64_t *stk) {
+static void STK_PrintI(int64_t *stk) {
+  PrintI((char *)stk[0], stk[1]);
+}
+
+static int64_t STK_PrintF(int64_t *stk) {
+  PrintF(((char **)stk)[0], ((double *)stk)[1]);
+  return 0;
+}
+static void STK_PrintPtr(int64_t *stk) {
   PrintPtr((char *)(stk[0]), (void *)stk[1]);
 }
+
 static int64_t STK_DolDocDumpIR(int64_t *stk) {
   int64_t len = 0, ir_cnt, idx;
   CCmpCtrl *cctrl = (CCmpCtrl *)(stk[2]);
@@ -109,7 +118,7 @@ static int64_t STK_DolDocDumpIR(int64_t *stk) {
   A_FREE(array);
   return len;
 }
-static int64_t ExitAiwnios(int64_t *);
+static void ExitAiwnios(int64_t *);
 static void PrsAddSymbol(char *name, int64_t (*ptr)(int64_t *), int64_t arity) {
   PrsBindCSymbol(name, ptr, arity);
 }
@@ -190,7 +199,7 @@ static void FuzzTest1() {
   PrsStmt(ccmp);
   PrsStmt(ccmp);
   PrsStmt(ccmp);
-  PrsAddSymbol("PrintI", &STK_PrintI, 2);
+  PrsAddSymbol("PrintI", STK_PrintI, 2);
   ccmp->cur_fun = HashFind("Fuzz", Fs->hash_table, HTT_FUN, 1);
   int64_t (*poop5)() = ccmp->cur_fun->fun_ptr;
   SetWriteNP(0);
@@ -344,6 +353,7 @@ static void FuzzTest3() {
   FFI_CALL_TOS_0(poop_ptr);
 }
 #endif
+
 static double Pow10(double d) {
   return pow(10, d);
 }
@@ -360,7 +370,7 @@ static void *MemSetU32(int32_t *dst, int32_t with, int64_t cnt) {
   }
   return dst;
 }
-static int64_t STK_AiwniosSetVolume(int64_t *stk) {
+static void STK_AiwniosSetVolume(int64_t *stk) {
   AiwniosSetVolume(*(double *)stk);
 }
 static int64_t STK_AiwniosGetVolume(int64_t *stk) {
@@ -381,9 +391,9 @@ static void PutS(char *s) {
 static int64_t STK_60fps(int64_t *stk) {
   return sixty_fps->count != 0;
 }
-extern int64_t GetTicksHP();
-static int64_t __GetTicksHP() {
+static int64_t __GetTicksHP(void) {
 #if defined(_WIN32) || defined(WIN32)
+  int64_t GetTicksHP(void);
   return GetTicksHP(); // From multic.c
 #else
   struct timespec ts;
@@ -402,7 +412,7 @@ static int64_t __GetTicksHP() {
   return theTick - initial;
 #endif
 }
-static int64_t __GetTicks() {
+static int64_t __GetTicks(void) {
   return __GetTicksHP() / 1000;
 }
 #if defined(__x86_64__)
@@ -594,11 +604,11 @@ static void TaskContextSetRIP(int64_t *ctx, void *p) {
 #endif
 }
 
-static int64_t STK_TaskContextSetRIP(int64_t *stk) {
+static void STK_TaskContextSetRIP(int64_t *stk) {
   TaskContextSetRIP((int64_t *)(stk[0]), (void *)stk[1]);
 }
 
-static int64_t STK_GenerateFFIForFun(int64_t *stk) {
+static void STK_GenerateFFIForFun(int64_t *stk) {
   TaskContextSetRIP((void *)stk[0], (void *)stk[1]);
 }
 
@@ -606,11 +616,11 @@ static int64_t STK_AIWNIOS_makecontext(int64_t *stk) {
   return AIWNIOS_makecontext((void *)stk[0], (void *)stk[1], (void *)stk[2]);
 }
 
-static int64_t STK___HC_SetAOTRelocBeforeRIP(int64_t *stk) {
+static void STK___HC_SetAOTRelocBeforeRIP(int64_t *stk) {
   __HC_SetAOTRelocBeforeRIP((void *)stk[0], (int64_t)stk[1]);
 }
 
-static int64_t STK___HC_CodeMiscIsUsed(int64_t *stk) {
+static void STK___HC_CodeMiscIsUsed(int64_t *stk) {
   __HC_CodeMiscIsUsed((CCodeMisc *)stk[0]);
 }
 
@@ -628,7 +638,7 @@ static int64_t STK_CmpCtrlDel(int64_t *stk) {
   return 0;
 }
 
-_Static_assert(sizeof(double) == sizeof(uint64_t));
+_Static_assert(sizeof(double) == sizeof(uint64_t), "wut");
 #define MATHFUNDEF(x)                                                          \
   static int64_t STK_##x(int64_t *_stk) {                                      \
     double *stk = (double *)_stk;                                              \
@@ -677,7 +687,7 @@ static int64_t STK_HeapCtrlInit(int64_t *stk) {
   return (int64_t)HeapCtrlInit((CHeapCtrl *)stk[0], (CTask *)stk[1], stk[2]);
 }
 
-static int64_t STK_HeapCtrlDel(int64_t *stk) {
+static void STK_HeapCtrlDel(int64_t *stk) {
   HeapCtrlDel((CHeapCtrl *)stk[0]);
 }
 
@@ -688,11 +698,11 @@ static int64_t STK___AIWNIOS_CAlloc(int64_t *stk) {
   return (int64_t)__AIWNIOS_CAlloc(stk[0], (CTask *)stk[1]);
 }
 
-static int64_t STK___HC_ICSetLock(int64_t *stk) {
+static void STK___HC_ICSetLock(int64_t *stk) {
   __HC_ICSetLock(stk[0]);
 }
 
-static int64_t STK___AIWNIOS_Free(int64_t *stk) {
+static void STK___AIWNIOS_Free(int64_t *stk) {
   __AIWNIOS_Free((void *)stk[0]);
 }
 
@@ -700,12 +710,12 @@ static int64_t STK_MSize(int64_t *stk) {
   return MSize((void *)stk[0]);
 }
 
-static int64_t STK___SleepHP(int64_t *stk) {
+static void STK___SleepHP(int64_t *stk) {
   MPSleepHP(stk[0]);
 }
 
 static int64_t STK___GetTicksHP(int64_t *stk) {
-  return __GetTicksHP(stk[0]);
+  return __GetTicksHP();
 }
 
 static int64_t STK___AIWNIOS_StrDup(int64_t *stk) {
@@ -808,14 +818,6 @@ char *setstkptr(char *ret) {
   return ret;
 }
 #endif
-static int64_t STK_PrintI(int64_t *stk) {
-  PrintI((char *)stk[0], stk[1]);
-}
-
-static int64_t STK_PrintF(int64_t *stk) {
-  PrintF(((char **)stk)[0], ((double *)stk)[1]);
-  return 0;
-}
 
 static int64_t STK_memcmp(int64_t *stk) {
   return (int64_t)memcmp((void *)stk[0], (void *)stk[1], stk[2]);
@@ -838,21 +840,21 @@ static int64_t STK_DebuggerClientEnd(int64_t *s) {
   return 0;
 }
 
-static int64_t STK_DbgPutS(int64_t *stk) {
+static void STK_DbgPutS(int64_t *stk) {
   fprintf(stdout, "%s", (char *)stk[0]);
   fflush(stdout);
 }
-static int64_t STK_PutS(int64_t *stk) {
-  fprintf(stdout, "%s", (char *)stk[0]);
-  fflush(stdout);
-}
-
-static int64_t STK_PutS2(int64_t *stk) {
+static void STK_PutS(int64_t *stk) {
   fprintf(stdout, "%s", (char *)stk[0]);
   fflush(stdout);
 }
 
-static int64_t STK_SetHolyFs(int64_t *stk) {
+static void STK_PutS2(int64_t *stk) {
+  fprintf(stdout, "%s", (char *)stk[0]);
+  fflush(stdout);
+}
+
+static void STK_SetHolyFs(int64_t *stk) {
   SetHolyFs((void *)stk[0]);
 }
 
@@ -864,15 +866,15 @@ static int64_t STK_GetHolyGs(int64_t *stk) {
   return (int64_t)GetHolyGs();
 }
 
-static int64_t STK_SpawnCore(int64_t *stk) {
+static void STK_SpawnCore(int64_t *stk) {
   SpawnCore((void *)stk[0], (void *)stk[1], stk[2]);
 }
 
-static int64_t STK_MPSleepHP(int64_t *stk) {
+static void STK_MPSleepHP(int64_t *stk) {
   MPSleepHP(stk[0]);
 }
 
-static int64_t STK_MPAwake(int64_t *stk) {
+static void STK_MPAwake(int64_t *stk) {
   MPAwake(stk[0]);
 }
 
@@ -880,14 +882,14 @@ static int64_t STK_mp_cnt(int64_t *stk) {
   return mp_cnt();
 }
 
-static int64_t STK_SetHolyGs(int64_t *stk) {
+static void STK_SetHolyGs(int64_t *stk) {
   SetHolyGs((void *)stk[0]);
 }
 static int64_t STK___GetTicks(int64_t *stk) {
   return __GetTicks();
 }
 
-static int64_t STK___Sleep(int64_t *stk) {
+static void STK___Sleep(int64_t *stk) {
 #ifdef __EMSCRIPTEN__
   BCAwake();
 #else
@@ -895,14 +897,14 @@ static int64_t STK___Sleep(int64_t *stk) {
 #endif
 }
 
-static int64_t STK_ImportSymbolsToHolyC(int64_t *stk) {
+static void STK_ImportSymbolsToHolyC(int64_t *stk) {
   ImportSymbolsToHolyC((void *)stk[0]);
 }
 static int64_t STK_AIWNIOS_getcontext(int64_t *stk) {
   return AIWNIOS_getcontext((void *)stk[0]);
 }
 
-static int64_t STK_AIWNIOS_setcontext(int64_t *stk) {
+static void STK_AIWNIOS_setcontext(int64_t *stk) {
   AIWNIOS_setcontext((void *)stk[0]);
 }
 
@@ -913,7 +915,7 @@ static int64_t STK_IsValidPtr(int64_t *stk) {
   return IsValidPtr((char *)stk[0]);
 #endif
 }
-static int64_t STK___HC_CmpCtrl_SetAOT(int64_t *stk) {
+static void STK___HC_CmpCtrl_SetAOT(int64_t *stk) {
   __HC_CmpCtrl_SetAOT((CCmpCtrl *)stk[0]);
 }
 
@@ -1200,7 +1202,7 @@ static int64_t STK___HC_ICAdd_RelocUnique(int64_t *stk) {
   return __HC_ICAdd_RelocUnqiue(stk[0], stk[1], stk[2], stk[3], stk[4], stk[5]);
 }
 
-static int64_t STK___HC_ICSetLine(int64_t *stk) {
+static void STK___HC_ICSetLine(int64_t *stk) {
   __HC_ICSetLine(stk[0], stk[1]);
 }
 static int64_t STK___HC_ICAdd_StaticRef(int64_t *stk) {
@@ -1251,7 +1253,7 @@ static int64_t STK_Misc_Caller(int64_t *stk) {
   return (int64_t)Misc_Caller(stk[0]);
 #endif
 }
-static int64_t STK_VFsSetPwd(int64_t *stk) {
+static void STK_VFsSetPwd(int64_t *stk) {
   VFsSetPwd(stk[0]);
 }
 static int64_t STK_VFsFileExists(int64_t *stk) {
@@ -1281,13 +1283,13 @@ static int64_t STK_VFsBlkWrite(int64_t *stk) {
 static int64_t STK_VFsFOpen(int64_t *stk) {
   return VFsFOpen(stk[0], stk[1]);
 }
-static int64_t STK_VFsFClose(int64_t *stk) {
+static void STK_VFsFClose(int64_t *stk) {
   VFsFClose(stk[0]);
 }
 static int64_t STK_VFsFSeek(int64_t *stk) {
   return VFsFSeek(stk[0], stk[1]);
 }
-static int64_t STK_VFsSetDrv(int64_t *stk) {
+static void STK_VFsSetDrv(int64_t *stk) {
   VFsSetDrv(stk[0]);
 }
 static int64_t STK_VFsUnixTime(int64_t *stk) {
@@ -1296,7 +1298,7 @@ static int64_t STK_VFsUnixTime(int64_t *stk) {
 static int64_t STK_VFsTrunc(int64_t *stk) {
   return VFsTrunc(stk[0], stk[1]);
 }
-static int64_t STK_UpdateScreen(int64_t *stk) {
+static void STK_UpdateScreen(int64_t *stk) {
   UpdateScreen(stk[0], stk[1], stk[2], stk[3]);
 #ifdef __EMSCRIPTEN__
   BCAwake();
@@ -1308,27 +1310,27 @@ static int64_t STK_VFsFSize(int64_t *stk) {
 static int64_t STK_UnixNow(int64_t *stk) {
   return UnixNow();
 }
-static int64_t STK_GrPaletteColorSet(int64_t *stk) {
+static void STK_GrPaletteColorSet(int64_t *stk) {
   GrPaletteColorSet(stk[0], stk[1]);
 }
-static int64_t STK_DrawWindowNew(int64_t *stk) {
+static void STK_DrawWindowNew(int64_t *stk) {
 #ifndef __EMSCRIPTEN__
   DrawWindowNew();
 #endif
 }
-static int64_t STK_SetKBCallback(int64_t *stk) {
+static void STK_SetKBCallback(int64_t *stk) {
   SetKBCallback(stk[0]);
 }
-static int64_t STK_SndFreq(int64_t *stk) {
+static void STK_SndFreq(int64_t *stk) {
   SndFreq(stk[0]);
 }
-static int64_t STK_SetMSCallback(int64_t *stk) {
+static void STK_SetMSCallback(int64_t *stk) {
   SetMSCallback(stk[0]);
 }
-static int64_t STK_InteruptCore(int64_t *stk) {
+static void STK_InteruptCore(int64_t *stk) {
   InteruptCore(stk[0]);
 }
-static int64_t STK___HC_CodeMiscInterateThroughRefs(int64_t *stk) {
+static void STK___HC_CodeMiscInterateThroughRefs(int64_t *stk) {
   __HC_CodeMiscInterateThroughRefs(stk[0], stk[1], stk[2]);
 }
 static int64_t STK___HC_CodeMiscJmpTableNew(int64_t *stk) {
@@ -1363,7 +1365,7 @@ static int64_t STK_NetRead(int64_t *stk) {
   return NetRead(stk[0], stk[1], stk[2]);
 }
 
-static int64_t STK_NetClose(int64_t *stk) {
+static void STK_NetClose(int64_t *stk) {
   NetClose(stk[0]);
 }
 
@@ -1371,11 +1373,11 @@ static int64_t STK_NetAccept(int64_t *stk) {
   return NetAccept(stk[0], stk[1]);
 }
 
-static int64_t STK_NetListen(int64_t *stk) {
+static void STK_NetListen(int64_t *stk) {
   NetListen(stk[0], stk[1]);
 }
 
-static int64_t STK_NetBindIn(int64_t *stk) {
+static void STK_NetBindIn(int64_t *stk) {
   NetBindIn(stk[0], stk[1]);
 }
 
@@ -1395,7 +1397,7 @@ static int64_t STK_NetAddrNew(int64_t *stk) {
   return NetAddrNew(stk[0], stk[1], stk[2]);
 }
 
-static int64_t STK_AiwniosTUIEnable(int64_t *) {
+static int64_t STK_AiwniosTUIEnable(int64_t *dummy __attribute__((unused))) {
   AiwniosTUIEnable();
   return 0;
 }
@@ -1403,13 +1405,13 @@ static int64_t STK_NetUDPAddrNew(int64_t *stk) {
   return NetUDPAddrNew(stk[0], stk[1], stk[2]);
 }
 
-static int64_t STK_NetAddrDel(int64_t *stk) {
+static void STK_NetAddrDel(int64_t *stk) {
   NetAddrDel(stk[0]);
 }
-static int64_t STK_NetConnect(int64_t *stk) {
+static void STK_NetConnect(int64_t *stk) {
   NetConnect(stk[0], stk[1]);
 }
-static int64_t STK_MPSetProfilerInt(int64_t *stk) {
+static void STK_MPSetProfilerInt(int64_t *stk) {
   MPSetProfilerInt((void *)stk[0], stk[1], stk[2]);
 }
 
@@ -1420,7 +1422,7 @@ static int64_t STK_NetUDPRecvFrom(int64_t *stk) {
 static int64_t STK_NetUDPSendTo(int64_t *stk) {
   return NetUDPSendTo(stk[0], stk[1], stk[2], stk[3]);
 }
-static int64_t STK_NetUDPAddrDel(int64_t *stk) {
+static void STK_NetUDPAddrDel(int64_t *stk) {
   NetUDPAddrDel(stk[0]);
 }
 
@@ -1453,7 +1455,7 @@ static int64_t STK_AiwnBCCallArgs(int64_t *stk) {
 }
 #endif
 
-static int64_t STK_VFsDir(int64_t *) {
+static int64_t STK_VFsDir(int64_t *dummy __attribute__((unused))) {
   char **ass = VFsDir();
   if (!ass)
     return 0;
@@ -1477,11 +1479,11 @@ int64_t IsCmdLineMode2() {
     return 0;
   return arg_cmd_line2->count != 0;
 }
-static int64_t STK_IsCmdLineMode(int64_t *) {
+static int64_t STK_IsCmdLineMode(int64_t *dummy __attribute__((unused))) {
   return IsCmdLineMode();
 }
 
-static int64_t STK_IsCmdLineMode2(int64_t *) {
+static int64_t STK_IsCmdLineMode2(int64_t *dummy __attribute__((unused))) {
   return IsCmdLineMode2();
 }
 int64_t STK_TermSize(int64_t *stk) {
@@ -1498,13 +1500,13 @@ static int64_t CmdLineGetStr(int64_t *stk) {
   return A_STRDUP(s ?: "", 0);
 }
 
-int64_t CmdLineBootFiles(int64_t *) {
+int64_t CmdLineBootFiles(int64_t *dummy __attribute__((unused))) {
 #ifdef __EMSCRIPTEN__
   return NULL;
 #endif
   return arg_boot_files->filename;
 }
-int64_t CmdLineBootFileCnt(int64_t *) {
+int64_t CmdLineBootFileCnt(int64_t *dummy __attribute__((unused))) {
 #if defined(__EMSCRIPTEN__)
   return 0;
 #endif
@@ -1527,7 +1529,7 @@ static int64_t is_fast_fail = 0;
 int64_t IsFastFail() {
   return is_fast_fail;
 }
-int64_t STK_IsFastFail(int64_t *) {
+int64_t STK_IsFastFail(int64_t *dummy __attribute__((unused))) {
   return IsFastFail();
 }
 static int64_t AiwniosPackRamDiskPtr(int64_t *);
@@ -1899,7 +1901,7 @@ typedef struct CAiwniosPack {
   char save_directory[144];
 } CAiwniosPack;
 static char *loaded_hcrt, *loaded_hcrt_ptr = NULL;
-static int64_t Boot(int64_t *) {
+static void Boot(int64_t *dummy __attribute__((unused))) {
   int64_t len, size, hcrt_size;
   char *fbuf, *hcrt;
   Fs = calloc(sizeof(CTask), 1);
@@ -2016,7 +2018,7 @@ static void AiwniosBye() {
     SDL_Quit();
   }
 }
-static int64_t ExitAiwnios(int64_t *stk) {
+static void ExitAiwnios(int64_t *stk) {
   quit = 1, quit_code = stk[0];
   if (arg_cmd_line->count || arg_bootstrap_bin->count) {
     AiwniosBye();

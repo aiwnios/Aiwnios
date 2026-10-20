@@ -164,7 +164,7 @@ void UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
   return;
 #endif
 }
-int64_t ScreenUpdateInProgress(int64_t *) {
+int64_t ScreenUpdateInProgress(int64_t *_ __attribute__((unused))) {
   return Bt(&screen_update_in_progress, 0);
 }
 static void _UpdateScreen(char *px, int64_t w, int64_t h, int64_t w_internal) {
@@ -198,7 +198,7 @@ void GrPaletteColorSet(int64_t i, uint64_t bgr48) {
   union {
     uint64_t i;
     struct {
-      uint16_t b, g, r, pad
+      uint16_t b, g, r, pad;
     };
   } u = {.i = bgr48};
   uint8_t b = u.b / (double)0xffff * 0xff, g = u.g / (double)0xffff * 0xff,
@@ -333,6 +333,7 @@ static int64_t K2SC(char ch) {
     if (keys[i] == ch)
       return i;
   }
+  __builtin_unreachable();
 }
 static int32_t __ScanKey(int64_t *ch, int64_t *sc, SDL_Event *_e) {
   SDL_Event e = *_e;
@@ -554,6 +555,8 @@ static int32_t __ScanKey(int64_t *ch, int64_t *sc, SDL_Event *_e) {
       case SDL_SCANCODE_F1 ... SDL_SCANCODE_F12:
         *sc = mod | (SC_F1 + e.key.keysym.scancode - SDL_SCANCODE_F1);
         return 1;
+      default:
+	return 1;
       }
     } else if (e.type == SDL_KEYUP) {
       mod |= SCF_KEY_UP;

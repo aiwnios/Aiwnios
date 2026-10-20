@@ -1,4 +1,4 @@
-#pragma once // https://github.com/eloj/lzw-eddy/blob/master/lzw.h
+// https://github.com/eloj/lzw-eddy/blob/master/lzw.h
 #include "c/lzw.h"
 
 #include <stdbool.h>

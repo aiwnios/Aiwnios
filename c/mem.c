@@ -465,6 +465,8 @@ int SetWriteNP(int st) {
   }
   return old;
 }
+#else
+int SetWriteNP(int st) { return st; }
 #  endif
 
 static void MemPagTaskFree(CMemBlk *blk, CHeapCtrl *hc) {
@@ -760,7 +762,7 @@ void *__AIWNIOS_MAlloc(int64_t cnt, void *t) {
   if (hc->hc_signature != 'H')
     hc = ((CTask *)hc)->heap;
   if (hc->hc_signature != 'H')
-    throw('BadMAll');
+    throw(*(int64_t *)"BadMAll");
   CHeapCtrlArena *arena = PickArena(hc);
   // During MemPagTaskAlloc,i splt up the malloc_free_lst into power of 2
   // things,so use power of two to use them
@@ -883,9 +885,9 @@ void __AIWNIOS_Free(void *ptr) {
   if (un->sz < 0) // Aligned chunks are negative and point to start
     un = un->sz + (char *)un;
   if (!un->hc)
-    throw('BadFree');
+    throw(*(int64_t *)"BadFree");
   if (un->hc->hc_signature != 'H')
-    throw('BadFree');
+    throw(*(int64_t *)"BadFree");
   if (bc_enable) {
     cnt = MSize(ptr);
     assert((int64_t)ptr < (1ll << 31));
@@ -940,7 +942,7 @@ int64_t MSize(void *ptr) {
   if (un->sz < 0) // Aligned chunks are negative and point to start
     un = un->sz + (char *)un;
   if (un->hc->hc_signature != 'H')
-    throw('BadFree');
+    throw(*(int64_t *)"BadFree");
   cnt = un->sz - sizeof(CMemUnused);
   SetWriteNP(oldwnp);
   return cnt;
@@ -970,7 +972,7 @@ CHeapCtrl *HeapCtrlInit(CHeapCtrl *ct, CTask *task, int64_t is_code_heap) {
     ct->arenas[a].malloc_free_lst = &new_nul;
     QueInit(&ct->arenas[a].used_next);
   }
-#ifdef __OpenBSD__ && !defined(USE_BYTECODE)
+#if defined(__OpenBSD__) && !defined(USE_BYTECODE)
   ct->buddies = calloc(1, sizeof(CBuddyPair));
   ct->buddies->offset_r = (1ul << 31) / 2;
 #endif

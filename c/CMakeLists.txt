@@ -50,22 +50,36 @@ elseif (ARCH STREQUAL "arm64")
 endif ()
 
 add_executable(aiwnios ${C_SOURCES})
-target_compile_options(aiwnios PRIVATE -Wstrict-prototypes -Werror-implicit-function-declaration -fno-rtti -fno-exceptions)
+target_compile_options(aiwnios PRIVATE -Wstrict-prototypes -Werror-implicit-function-declaration -fno-exceptions)
 set(COMP_OPTS
-  -w
-  -Wno-all
+  -Wno-parentheses
+  -Wno-strict-prototypes
+  -Wno-pointer-sign
   -Wno-int-conversion
+  -Wno-format
+  -Wno-compare-distinct-pointer-types
   -Wno-incompatible-pointer-types 
- -fno-math-errno
+  -Wno-pointer-integer-compare
+  -Wno-address-of-packed-member
+  -fno-math-errno
   -fno-trapping-math
   -fno-exceptions
   -fno-omit-frame-pointer
-  -fno-signaling-nans
   -fno-stack-protector
   -fno-unwind-tables
   -fno-asynchronous-unwind-tables
-  -fcf-protection=none)
+  -fcf-protection=none
+  -fno-strict-aliasing
+  -Wnull-dereference
+  -fno-delete-null-pointer-checks
+)
 target_compile_definitions(aiwnios PRIVATE _GNU_SOURCE=1)
+if (NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
+  list(APPEND COMP_OPTS
+    -fno-signaling-nans
+    -Wno-discarded-qualifiers)
+endif ()
+
 if(USE_BYTECODE)
   if(DEFINED EMSCRIPTEN)
     list(APPEND COMP_OPTS  -sUSE_SDL=2 -sWASM=1 -Wl,--export-all	)

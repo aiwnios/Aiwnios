@@ -397,6 +397,7 @@ int VFsMountDrive(char let, char *path) {
   int idx = toupper(let) - 'A';
   char *p = StPCpy(mount_points[idx], path);
   strcpy(p, "/");
+  return 1;
 }
 
 int64_t VFsFBlkRead(void *d, int64_t sz, int f) {
@@ -489,7 +490,7 @@ static void CopyDir(char *dst, char *src) {
   closedir(d);
 }
 
-static int __FIsNewer(char *fn, char *fn2) {
+static int __FIsNewer(char const *fn, char const *fn2) {
 #ifndef _WIN64
   struct stat s, s2;
   stat(fn, &s), stat(fn2, &s2);

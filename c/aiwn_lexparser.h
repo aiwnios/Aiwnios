@@ -1,6 +1,6 @@
 #pragma once
-#define ERR         0x7fFFffFFffFFffFF
-#define INVALID_PTR ERR
+#define ERR         (-1ull)
+#define INVALID_PTR ((void*)ERR)
 typedef struct CRPN CRPN;
 #include "aiwn_hash.h"
 #include "aiwn_asm.h"
@@ -619,8 +619,8 @@ int64_t X86Leave(char *to, int64_t ul);
 int64_t X86JmpReg(char *to, int64_t r);
 
 CCodeCtrl *CodeCtrlPush(CCmpCtrl *ccmp);
+CCodeCtrl *CodeCtrlPop(CCmpCtrl *ccmp);
 void CodeCtrlDel(CCodeCtrl *ctrl);
-void CodeCtrlPop(CCmpCtrl *ccmp);
 CRPN *__HC_ICAdd_Typecast(CCodeCtrl *cc, int64_t rt, int64_t ptr_cnt);
 CRPN *__HC_ICAdd_SubCall(CCodeCtrl *cc, CCodeMisc *cm);
 CRPN *__HC_ICAdd_SubProlog(CCodeCtrl *cc);

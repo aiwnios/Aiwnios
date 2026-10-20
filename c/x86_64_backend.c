@@ -94,9 +94,7 @@ extern int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 #define X86_64_STACK_REG 4
 
 #define INST(func, ...)                                                        \
-  {                                                                            \
-    code_off += func(bin ? bin + code_off : NULL, __VA_ARGS__);                \
-  }
+  code_off += func(bin ? bin + code_off : NULL, __VA_ARGS__)
 
 //
 // Codegen section
@@ -408,7 +406,7 @@ static int64_t __ICMoveI64(CCmpCtrl *cctrl, int64_t reg, uint64_t imm,
 
 static CCodeMisc *GetF64LiteralMisc(CCmpCtrl *cctrl, double imm) {
   CCodeMisc *misc = cctrl->code_ctrl->code_misc->next;
-  for (misc; misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {
+  for (; misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {
     if (misc->type == CMT_FLOAT_CONST)
       if (misc->integer == *(int64_t *)&imm) {
         return misc;
@@ -424,7 +422,7 @@ static int64_t __ICMoveF64(CCmpCtrl *cctrl, int64_t reg, double imm, char *bin,
                            int64_t code_off) {
   CCodeMisc *misc = cctrl->code_ctrl->code_misc->next;
   char *dptr;
-  for (misc; misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {
+  for (; misc != cctrl->code_ctrl->code_misc; misc = misc->base.next) {
     if (misc->type == CMT_FLOAT_CONST)
       if (misc->integer == *(int64_t *)&imm) {
         goto found;
@@ -772,7 +770,7 @@ static int64_t GetSIBParts(CRPN *r, int64_t *off, CRPN **_b, CRPN **_idx,
   return is_sib && Is32Bit(i);
 }
 
-static int64_t IsGoodIReg(r) {
+static int64_t IsGoodIReg(int8_t r) {
   return IsSavedIReg(r) || r == R9 || r == RBX;
 }
 // Returns 1 if we hit the bottom
@@ -1486,7 +1484,7 @@ notmem:
   }
   rpn2 = ICArgN(rpn, rpn->length);
   if (rpn2->type == IC_SHORT_ADDR) {
-    INST(X86Call32, 0)
+    INST(X86Call32, 0);
     if (bin)
       CodeMiscAddRef(rpn2->code_misc, bin + code_off - 4);
     goto after_call;
@@ -3284,7 +3282,7 @@ static int64_t FuncProlog(CCmpCtrl *cctrl, char *bin, int64_t code_off) {
     off -= 8;
   }
   if (i3) {
-    INST(X86SubImm32, RSP, i3 * 8)
+    INST(X86SubImm32, RSP, i3 * 8);
     for (i = 0; i != i3; i++) {
       INST(X86MovIndirRegF64, flist[i], -1, -1, RSP, i * 8);
     }
@@ -3550,7 +3548,7 @@ static int64_t __SexyPostOp(
                                  AIWNIOS_TMP_IREG_POOP, bin, code_off);
       code_off = ICMov(cctrl, &rpn->res, &tmp, bin, code_off);
       if (rpn->integer == 1)
-        INST(incr, MIR(cctrl, tmp.reg))
+        INST(incr, MIR(cctrl, tmp.reg));
       else
         INST(i_imm, MIR(cctrl, tmp.reg), rpn->integer);
       code_off = ICMov(cctrl, &derefed, &tmp, bin, code_off);
@@ -3776,8 +3774,9 @@ static void SetKeepTmps(CRPN *rpn) {
 //
 // ALWAYS ASSUME WORST CASE if we dont have a ALLOC'ed peice of RAM
 //
-int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
-                       int64_t code_off) {
+__attribute__((nonnull(1, 2))) int64_t __OptPassFinal(CCmpCtrl *cctrl,
+                                                      CRPN *rpn, char *bin,
+                                                      int64_t code_off) {
   CRPN *old_rpn = cctrl->cur_rpn;
   cctrl->cur_rpn = rpn;
   CCodeMisc *misc, *misc2;
@@ -3906,7 +3905,6 @@ int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
       [IC_SQR_U64] = &&ic_sqr_u64,
       [IC_SQR] = &&ic_sqr,
       [IC_ABS] = &&ic_abs,
-      [IC_SQRT] = &&ic_sqrt,
       [IC_SIN] = &&ic_sin,
       [IC_COS] = &&ic_cos,
       [IC_TAN] = &&ic_tan,

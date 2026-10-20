@@ -53,7 +53,7 @@ extern int64_t LBts(void *ptr, int64_t);
   })
 
 extern void *Misc_BP();
-void *Misc_Caller(int64_t c);
+extern void *Misc_Caller(int64_t c);
 extern void AIWNIOS_setcontext(void *);
 extern int64_t AIWNIOS_getcontext(void *);
 extern int64_t AIWNIOS_makecontext(void *, void *, void *);
@@ -63,9 +63,9 @@ extern int64_t FFI_CALL_TOS_2(void *fptr, int64_t, int64_t);
 extern int64_t FFI_CALL_TOS_3(void *fptr, int64_t, int64_t, int64_t);
 extern int64_t FFI_CALL_TOS_4(void *fptr, int64_t, int64_t, int64_t, int64_t);
 extern int64_t FFI_CALL_TOS_CUSTOM_BP(uint64_t bp, void *fp, uint64_t ip);
-int64_t TempleOS_CallN(void (*fptr)(), int64_t argc, int64_t *argv);
-int64_t TempleOS_Call(void (*fptr)(void));
-int64_t TempleOS_CallVaArgs(void (*fptr)(void), int64_t argc, int64_t *argv);
+extern int64_t TempleOS_CallN(void (*fptr)(), int64_t argc, int64_t *argv);
+extern int64_t TempleOS_Call(void (*fptr)(void));
+extern int64_t TempleOS_CallVaArgs(void (*fptr)(void), int64_t argc, int64_t *argv);
 
 #if defined(__EMSCRIPTEN__)
 int64_t FFI_CALL_TOS_0_FEW_INSTS(void *fptr,int64_t iterations);

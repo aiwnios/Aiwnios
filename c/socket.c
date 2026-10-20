@@ -69,9 +69,9 @@ int64_t NetSocketNew(int64_t ipv) {
   return s;
 }
 
-int64_t BigEndianIPAddrByHostname(CNetAddr *addr) {
+/*int64_t BigEndianIPAddrByHostname(CNetAddr *addr) {
   int64_t ret = -1;
-}
+}*/
 
 // ipv is 4 or 6
 CNetAddr *NetAddrNew(char *host, int64_t port, int64_t ipv) {
@@ -264,7 +264,7 @@ CInAddr *NetUDPAddrNew(char *host, int64_t port, int64_t ipv) {
 }
 
 int64_t NetUDPSendTo(int64_t s, char *buf, int64_t len, CInAddr *to) {
-  sendto(s, buf, len, 0, &to->sa, sizeof(to->sa));
+  return sendto(s, buf, len, 0, &to->sa, sizeof(to->sa));
 }
 
 void NetUDPAddrDel(CInAddr *a) {

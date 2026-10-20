@@ -199,7 +199,7 @@ void TermSetMsCb(void *c) {
   puts("\e[?1049h"); // Alternate screen buffer
 }
 
-static int InputThread(void *ul) {
+static void InputThread(void *ul) {
   char c;
   int64_t flags, lr = 0;
   char _buf[256], *buf = _buf;

@@ -17,7 +17,8 @@ extern void DoNothing();
 #include <string.h>
 CCodeCtrl *CodeCtrlPush(CCmpCtrl *ccmp) {
   CCodeCtrl *cctrl;
-  *(cctrl = A_CALLOC(sizeof(CCodeCtrl), ccmp->hc)) = (CCodeCtrl){
+  cctrl = A_CALLOC(sizeof(CCodeCtrl), ccmp->hc);
+  *cctrl = (CCodeCtrl){
       .hc = ccmp->hc,
       .next = ccmp->code_ctrl,
       .ir_code = A_CALLOC(sizeof(CRPN), cctrl->hc),
@@ -117,10 +118,10 @@ CCodeMisc *CodeMiscNew(CCmpCtrl *ccmp, int64_t type) {
   return misc;
 }
 
-void CodeCtrlPop(CCmpCtrl *ccmp) {
+CCodeCtrl *CodeCtrlPop(CCmpCtrl *ccmp) {
   CCodeCtrl *next = ccmp->code_ctrl->next, *c = ccmp->code_ctrl;
   CodeCtrlDel(c);
-  ccmp->code_ctrl = next;
+  return ccmp->code_ctrl = next;
 }
 
 int64_t PrsKw(CCmpCtrl *ccmp, int64_t);
@@ -144,6 +145,7 @@ CMemberLst *MemberFind(char *needle, CHashClass *cls);
 CCmpCtrl *CmpCtrlDel(CCmpCtrl *d) {
   HeapCtrlDel(d->hc);
   A_FREE(d);
+  return NULL;
 }
 CCmpCtrl *CmpCtrlNew(CLexer *lex) {
   int64_t idx, idx2;
@@ -1611,6 +1613,7 @@ static int64_t SetIncAmt(CCmpCtrl *ccmp, CRPN *target) {
       a = next->ic_class[-1].sz;
   }
   target->integer = a;
+  return 0;
 }
 // https://en.wikipedia.org/wiki/Shunting_yard_algorithm
 #define PEF_NO_COMMA 1
@@ -2321,7 +2324,7 @@ int64_t ParseWarn(CCmpCtrl *ctrl, char *fmt, ...) {
   char buf[STR_LEN];
   vsprintf(buf, fmt, lst);
   va_end(lst);
-  fprintf(AIWNIOS_OSTREAM, "WARN:%s:%d:%d %s\n", ctrl->lex->file->filename,
+  return fprintf(AIWNIOS_OSTREAM, "WARN:%s:%d:%d %s\n", ctrl->lex->file->filename,
           ctrl->lex->file->ln + 1, ctrl->lex->file->col + 1, buf);
 }
 
@@ -2334,6 +2337,7 @@ int64_t ParseErr(CCmpCtrl *ctrl, char *fmt, ...) {
   fprintf(AIWNIOS_OSTREAM, "ERR:%s:%d:%d %s\n", ctrl->lex->file->filename,
           ctrl->lex->file->ln + 1, ctrl->lex->file->col + 1, buf);
   throw(*(int64_t *)"Prs\0\0\0\0\0");
+  __builtin_trap();
 }
 
 int64_t PrsKw(CCmpCtrl *ccmp, int64_t kwt) {
@@ -4881,7 +4885,7 @@ CCodeCtrl *__HC_CodeCtrlPush(CCmpCtrl *ccmp) {
   return CodeCtrlPush(ccmp);
 }
 CCodeCtrl *__HC_CodeCtrlPop(CCmpCtrl *ccmp) {
-  CodeCtrlPop(ccmp);
+  return CodeCtrlPop(ccmp);
 }
 char *__HC_Compile(CCmpCtrl *ccmp, int64_t *sz, char **dbg_info, CHeapCtrl *h) {
   return Compile(ccmp, sz, dbg_info, h);

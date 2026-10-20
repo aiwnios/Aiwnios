@@ -1,8 +1,8 @@
 #pragma once
 #include <stdbool.h>
 #include <stdio.h>
-char *FileRead(char *fn, int64_t *sz);
 
+char *FileRead(char *fn, int64_t *sz);
 void VFsThrdInit();
 void VFsSetDrv(char d);
 int64_t VFsDel(char *p);

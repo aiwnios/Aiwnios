@@ -14,6 +14,7 @@
 #include <inttypes.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <stddef.h>
 
 #ifdef __x86_64__
 #  include <errno.h>
@@ -337,7 +338,7 @@ static int64_t nproc;
 //  mode,MAke sure it defaults to 0 This is because we boot into core 0,-1 leads
 //  to weird memory behavior. 21 Nrootconauto
 //
-static _Thread_local core_num = 0;
+static _Thread_local size_t core_num = 0;
 static CCPU cores[128];
 CHashTable *glbl_table;
 
@@ -391,6 +392,7 @@ static void *threadrt(void *_pair) {
   fp = pair->fp;
   free(pair);
   FFI_CALL_TOS_0(fp);
+  __builtin_trap();
 }
 #  ifndef _WIN32
 
@@ -399,7 +401,7 @@ static _Atomic(pid_t) which_interupt;
 #    endif
 
 void InteruptCore(int64_t core) {
-#    ifndef defined(POOP_TLS)
+#    ifndef POOP_TLS
   pthread_kill(cores[core].pt, SIGUSR1);
 #    else
   // we changed the address of the tib so we'll have to pass it ourselves

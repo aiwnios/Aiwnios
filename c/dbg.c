@@ -23,6 +23,12 @@ void DebuggerBegin() {
 void InstallDbgSignalsForThread() {
 }
 #else
+#ifndef __USE_GNU
+#  define __USE_GNU
+#endif
+#ifndef _XOPEN_SOURCE
+#  define _XOPEN_SOURCE    800
+#endif
 #  include "aiwn_bytecode.h"
 #  include "c/aiwn_asm.h"
 #  include "c/aiwn_except.h"
@@ -37,8 +43,6 @@ void InstallDbgSignalsForThread() {
 #  include <stdlib.h>
 #  include <string.h>
 // Look at your vendor's ucontext.h
-#  define __USE_GNU
-#  define _XOPEN_SOURCE    1
 #  define DBG_MSG_RESUME   "%p:%d,RESUME,%p\n"   //(task,pid,single_step)
 #  define DBG_MSG_START    "%p:%d,START,%p\n"    //(task,pid,dump_regs_to)
 #  define DBG_MSG_SET_GREG "%p:%d,SGREG,%p,%p\n" //(task,pid,which_reg,value)
@@ -363,6 +367,7 @@ static int64_t DebuggerWait(CQue *head, pid_t *got) {
       *got = pid;
     return sig;
   }
+  __builtin_trap();
 }
 #  endif
 static void PTWriteAPtr(int64_t tid, void *to, uint64_t v) {
