@@ -71,7 +71,6 @@ set(COMP_OPTS
   -fcf-protection=none
   -fno-strict-aliasing
   -Wnull-dereference
-  -fno-delete-null-pointer-checks
 )
 target_compile_definitions(aiwnios PRIVATE _GNU_SOURCE=1)
 if (NOT CMAKE_C_COMPILER_ID MATCHES "Clang")

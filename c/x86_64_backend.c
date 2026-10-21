@@ -93,6 +93,8 @@ extern int64_t __OptPassFinal(CCmpCtrl *cctrl, CRPN *rpn, char *bin,
 #define X86_64_BASE_REG  5
 #define X86_64_STACK_REG 4
 
+#define CodeMiscAddRef(a, b)                                                   \
+  (bin ? CodeMiscAddRef((a), (b)) : &(CCodeMiscRef){0})
 #define INST(func, ...)                                                        \
   code_off += func(bin ? bin + code_off : NULL, __VA_ARGS__)
 
@@ -4230,37 +4232,20 @@ __attribute__((nonnull(1, 2))) int64_t __OptPassFinal(CCmpCtrl *cctrl,
     //
     // See Below now
     //
-    if (next->res.set_flags) {
-      if (!reverse) {
-        INST(X86Jcc, X86_COND_E | 1, 6);
-        CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
+    if (!next->res.set_flags) {
+      if (next->raw_type == RT_F64) {
+        code_off = PutICArgIntoReg(cctrl, &next->res, RT_F64, 2, bin, code_off);
+        // See Above note
+        code_off = __ICMoveF64(cctrl, 1, 0, bin, code_off);
+        INST(X86COMISDRegReg, next->res.reg, 1);
       } else {
-        INST(X86Jcc, X86_COND_E, 6);
-        CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
-      }
-    } else if (next->raw_type == RT_F64) {
-      code_off = PutICArgIntoReg(cctrl, &next->res, RT_F64, 2, bin, code_off);
-      // See Above note
-      code_off = __ICMoveF64(cctrl, 1, 0, bin, code_off);
-      INST(X86COMISDRegReg, next->res.reg, 1);
-      if (!reverse) {
-        INST(X86Jcc, X86_COND_E | 1, 6);
-        CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
-      } else {
-        INST(X86Jcc, X86_COND_E, 6);
-        CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
-      }
-    } else {
-      code_off = PutICArgIntoReg(cctrl, &next->res, RT_I64i, 0, bin, code_off);
-      INST(X86Test, next->res.reg, next->res.reg);
-      if (!reverse) {
-        INST(X86Jcc, X86_COND_E | 1, 6);
-        CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
-      } else {
-        INST(X86Jcc, X86_COND_E, 6);
-        CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
+        code_off =
+            PutICArgIntoReg(cctrl, &next->res, RT_I64i, 0, bin, code_off);
+        INST(X86Test, next->res.reg, next->res.reg);
       }
     }
+    INST(X86Jcc, X86_COND_E | !reverse, 6);
+    CodeMiscAddRef(rpn->code_misc, bin + code_off - 4);
     break;
   ic_to_bool:
     into_reg = 0;
